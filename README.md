@@ -1,4 +1,7 @@
-# ANLS* - ANLS Score for Complex Objects
+# ANLS* - A Universal Document Processing Metric for Generative Large Language Models
+This is the official implementation of the paper
+*"ANLS\* - A Universal Document Processing Metric for Generative Large Language Models"*
+
 
 ## How to use the ANLS* score?
 1. Copy the file to your project: [anls_star.py](src/anls_star.py)
