@@ -28,30 +28,6 @@ The following types (and all combinations of it) are supported:
 
 ## Benchmarks
 
-### Execute
-1. Install all dependencies via `pip install -r requirements_dev.txt`
-2. Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. Also, ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
-3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script:
-
-```bash
-    python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
-```
-
-The following models are supported:
-- `gpt-3.5-turbo-16k`
-- `gpt-4-turbo`
-- `gemini-pro`
-
-The following prompt methods are supported:
-- `simple`
-- `latin`
-- `sft` (DeepOpinion internal only)
-
-5. The final ANLS* is shown on the console. 
-
-
-### Results
 The following table shows the ANLS* score for the different models and prompt methods on different datasets. Note that we evaluate the models and prompt methods on 100 samples for single page datasets and 20 samples for multi page datasets in order to reduce the execution time and costs. Note that the provided validation set is used for the report.
 
 
@@ -83,9 +59,32 @@ The following table shows the ANLS* score for the different models and prompt me
 |                   | SFT (Ours)      | **0.723**             | 0.711       | 0.720      |
 
 
-## Run all Unit Tests
-To run all unit tests simply execute `pytest`
+### How To Execute
+1. Install all dependencies via `pip install -r requirements_dev.txt`
+2. Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. Also, ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
+3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
+4. Execute the corresponding benchmark script:
 
+```bash
+    python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
+```
+
+The following models are supported:
+- `gpt-3.5-turbo-16k`
+- `gpt-4-turbo`
+- `gemini-pro`
+
+The following prompt methods are supported:
+- `simple`
+- `latin`
+- `sft` (DeepOpinion internal only)
+
+5. The final ANLS* is shown on the console. 
+
+
+
+## How to Execute all Unit Tests
+To run all unit tests simply execute `pytest`
 
 ## Citation
 In case you use this code, please cite the following paper:
