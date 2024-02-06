@@ -1,3 +1,12 @@
+""" Official ANLS* metric implementation. 
+
+Paper: ANLS* - A Universal Document Processing Metric for Generative Large Language Models
+Authors: David Peer, Philemon Schöpf, Volckmar Nebendahl, Alexander Rietzler, Sebastian Stabinger
+Link: ToDo
+
+DeepOpinion, 2024
+"""
+
 import abc
 import warnings
 from typing import Any
