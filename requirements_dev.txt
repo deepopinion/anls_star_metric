@@ -1,0 +1,13 @@
+-r requirements.txt
+pytest
+numpy
+hypothesis
+git+https://github.com/deepopinion/ocr_wrapper
+tqdm
+langchain
+langchain-openai
+langchain_google_vertexai
+pdf2image
+pydantic
+google-cloud-vision
+hypothesis
