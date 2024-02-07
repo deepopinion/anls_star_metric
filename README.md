@@ -1,7 +1,15 @@
 # ANLS* - A Universal Document Processing Metric for Generative Large Language Models
-This is the official implementation of the paper
+This is the official implementation of the [paper](https://arxiv.org/pdf/2402.03848.pdf)
 *"ANLS\* - A Universal Document Processing Metric for Generative Large Language Models"*
 
+    @misc{anls_star,
+        title={ANLS* -- A Universal Document Processing Metric for Generative Large Language Models}, 
+        author={David Peer and Philemon Schöpf and Volckmar Nebendahl and Alexander Rietzler and Sebastian Stabinger},
+        year={2024},
+        eprint={2402.03848},
+        archivePrefix={arXiv},
+        primaryClass={cs.CL}
+    }
 
 ## How to use the ANLS* score?
 1. Copy the file to your project: [anls_star.py](src/anls_star.py)
@@ -85,7 +93,3 @@ The following prompt methods are supported:
 
 ## How to Execute all Unit Tests
 To run all unit tests simply execute `pytest`
-
-## Citation
-In case you use this code, please cite the following paper:
-
