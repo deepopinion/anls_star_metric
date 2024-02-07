@@ -1,7 +1,10 @@
 # ANLS* - A Universal Document Processing Metric for Generative Large Language Models
+<div align="center">
 
-[![arXiv](https://img.shields.io/badge/arXiv-2402.03848-30C251.svg)](https://arxiv.org/abs/2402.03848) 
-![Unit Tests](https://github.com/deepopinion/anls_star_metric/actions/workflows/test.yml/badge.svg)
+<a href="">[![arXiv](https://img.shields.io/badge/arXiv-2402.03848-30C251.svg)](https://arxiv.org/abs/2402.03848)</a>
+<a href="">![Unit Tests](https://github.com/deepopinion/anls_star_metric/actions/workflows/test.yml/badge.svg)</a>
+
+</div>
 
     @misc{anls_star,
         title={ANLS* -- A Universal Document Processing Metric for Generative Large Language Models}, 
