@@ -30,7 +30,7 @@ print(anls)
 
 4. Thats it!
 
-## ANLS* score - Supported Types
+## Supported Types
 Simply copy this file to your project and import the `anls_score` function from it. Then call the function with the ground truth and the predictions. 
 
 The following types (and all combinations of it) are supported:
