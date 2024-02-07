@@ -1,5 +1,5 @@
 # ANLS* - A Universal Document Processing Metric for Generative Large Language Models
-This is the official implementation of the [paper](https://arxiv.org/pdf/2402.03848.pdf).
+[![arXiv](https://img.shields.io/badge/arXiv-2402.03848-b31b1b.svg)](https://arxiv.org/abs/2402.03848) 
 
     @misc{anls_star,
         title={ANLS* -- A Universal Document Processing Metric for Generative Large Language Models}, 
