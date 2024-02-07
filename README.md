@@ -1,5 +1,5 @@
 # ANLS ★
-**★ A Universal Document Processing Metric for Generative Large Language Models ★**
+**🌟 A Universal Document Processing Metric for Generative Large Language Models 🌟**
 
 <div align="center">
 
