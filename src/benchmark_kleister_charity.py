@@ -10,7 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from vertexai.generative_models._generative_models import ResponseBlockedError
 from pdf2image import convert_from_path
-from pydantic import BaseModel, Field
+from langchain.pydantic_v1 import BaseModel, Field
 
 import utils
 from anls_star import anls_score
@@ -27,8 +27,6 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 GITHUB_REPO_PATH = "../datasets/kleister-charity/"
 PARALLELISM = 5
 TEST_SIZE = 50
-MODEL = "gpt-4-1106-preview" if MODEL == "gpt-4-turbo" else MODEL
-PROVIDER = "vertexai" if MODEL == "gemini-pro" else "openai"
 
 random.seed(42)
 
@@ -81,12 +79,12 @@ parser = PydanticOutputParser(pydantic_object=ModelOutput)
 #
 # Prepare the pipeline
 #
-llm = utils.create_llm(provider=PROVIDER, model=MODEL)
+llm = utils.create_llm(model=MODEL)
 prompt = ChatPromptTemplate.from_messages(
     [
         (
              # Unfortunately, gemini-pro does not support the system message...
-            "system" if PROVIDER == "openai" else "user",
+            utils.sys_message(MODEL),
             (
                 "You are a document information extraction system.\n"
                 "You are given a document and a json with keys that must be extracted from the document.\n"
@@ -141,7 +139,7 @@ async def evaluate_sample(sample):
 
             doc = "\n".join(pages)
             output = await chain.ainvoke({"document": doc, "format_instructions": parser.get_format_instructions()})
-            output = output.model_dump()
+            output = output.dict()
 
             anls = anls_score(label, output)
             return anls

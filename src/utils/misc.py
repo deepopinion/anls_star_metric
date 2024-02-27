@@ -1,10 +1,12 @@
 import asyncio
-import multiprocessing
+import os
 from PIL import Image
 from ocr_wrapper import GoogleOCR
 
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, HarmCategory, HarmBlockThreshold
+from langchain_mistralai.chat_models import ChatMistralAI
+
 
 from utils import latin
 
@@ -15,7 +17,7 @@ except ImportError:
 
 
 # Per default GoogleOCR is used. Any OCR scanner can be used that is supported by the ocr_wrapper :)
-ocr_scanner = GoogleOCR(ocr_samples=1)
+ocr_scanner = GoogleOCR(ocr_samples=1, cache_file=".ocr_cache")
 
 
 async def doc_to_prompt(img, method: str) -> str:
@@ -40,7 +42,12 @@ async def doc_to_prompt(img, method: str) -> str:
 #
 # LLM Factory methods
 #
-def create_llm(*, provider: str, model: str):
+def create_llm(*, model: str):
+    provider = get_provider(model)
+    
+    if model == "gpt-4-turbo":
+        model = "gpt-4-1106-preview"
+
     settings = {
         "temperature": 0.0,
     }
@@ -59,8 +66,39 @@ def create_llm(*, provider: str, model: str):
         return ChatVertexAI(
             model_name=model,
             # safety_settings=safety_settings,
-            convert_system_message_to_human=True,
+            convert_system_message_to_human=True, # This parameter is still not working -- if its used an exception is raised
+            **settings,
+        )
+    elif provider == "mistral":
+        endpoint = os.environ.get("MISTRAL_ENDPOINT")
+        api_key = os.environ.get("MISTRAL_API_KEY")
+        return ChatMistralAI(
+            model=model,
+            endpoint=endpoint,
+            mistral_api_key=api_key,
             **settings,
         )
 
     raise Exception(f"Unknown provider: {provider}")
+
+
+def get_provider(model: str):
+    if model.startswith("gpt"):
+        return "openai"
+
+    elif model.startswith("gemini"):
+        return "vertexai"
+    
+    elif model.startswith("mistral"):
+        return "mistral"
+    
+    raise Exception(f"Unknown model: {model}")
+
+
+def sys_message(model: str):
+    """  Gemini Pro does not support the system message.
+    The provided "convert_system_message_to_human" arg is not working in langchain-google-vertexai 0.0.5.
+    So we convert it manually
+    """
+    provider = get_provider(model)
+    return "user" if provider == "vertexai" else "system"

@@ -1,3 +1,4 @@
+.ocr_cache
 src/utils/sft.py
 .vscode
 
