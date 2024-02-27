@@ -8,6 +8,7 @@ tqdm
 langchain
 langchain-openai
 langchain_google_vertexai
+langchain-mistralai
 pdf2image
 pydantic
 google-cloud-vision

@@ -23,8 +23,6 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 TEST_SIZE = 50
 PARALLELISM = 4
 DATASET_PATH = "../datasets/MPDocVQA"
-MODEL = "gpt-4-1106-preview" if MODEL == "gpt-4-turbo" else MODEL
-PROVIDER = "vertexai" if MODEL == "gemini-pro" else "openai"
 
 random.seed(42)
 
@@ -40,12 +38,12 @@ if not os.path.exists(val_json_file):
 #
 # Prepare the pipeline
 #
-llm = utils.create_llm(provider=PROVIDER, model=MODEL)
+llm = utils.create_llm(model=MODEL)
 prompt = ChatPromptTemplate.from_messages(
     [
         (
              # Unfortunately, gemini-pro does not support the system message...
-            "system" if PROVIDER == "openai" else "user",
+            utils.sys_message(MODEL),
             (
                 "You are a world-class question answering system.\n"
                 "You are given a document and a question. You must answer the question based on the document.\n"
