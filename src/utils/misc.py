@@ -1,5 +1,5 @@
 import asyncio
-import multiprocessing
+import os
 from PIL import Image
 from ocr_wrapper import GoogleOCR
 
@@ -17,7 +17,7 @@ except ImportError:
 
 
 # Per default GoogleOCR is used. Any OCR scanner can be used that is supported by the ocr_wrapper :)
-ocr_scanner = GoogleOCR(ocr_samples=1)
+ocr_scanner = GoogleOCR(ocr_samples=1, cache_file=".ocr_cache")
 
 
 async def doc_to_prompt(img, method: str) -> str:
@@ -70,7 +70,14 @@ def create_llm(*, model: str):
             **settings,
         )
     elif provider == "mistral":
-        return ChatMistralAI(model=model)
+        endpoint = os.environ.get("MISTRAL_ENDPOINT")
+        api_key = os.environ.get("MISTRAL_API_KEY")
+        return ChatMistralAI(
+            model=model,
+            endpoint=endpoint,
+            mistral_api_key=api_key,
+            **settings,
+        )
 
     raise Exception(f"Unknown provider: {provider}")
 

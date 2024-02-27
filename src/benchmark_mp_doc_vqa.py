@@ -86,7 +86,8 @@ async def evaluate_sample(sample):
 
             anls = anls_score(answers, answer)
             return anls
-        except ResponseBlockedError:
+        except Exception as e:
+            print(f"(Warning) Failed to process sample: {e}")
             return 0.0
 
 

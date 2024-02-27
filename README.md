@@ -49,28 +49,28 @@ The following table shows the ANLS* score for the different models and prompt me
 | Dataset           | Method     | gpt-3.5-turbo-16k | gpt-4-turbo | gemini-pro | mistral-large |
 | ----------------- | ---------- | ----------------- | ----------- | ---------- | ------------- |
 |**VQA**|
-| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | |
-|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | |
-|                   | SFT (Ours)      | **0.809**             | 0.790       | 0.741      | |
-| MPDocVQA          | Simple          | 0.348             | 0.389       | 0.389      | |
-|                   | Latin Prompting | 0.413             | 0.463       | 0.467      | |
-|                   | SFT (Ours)      | 0.547             | **0.548**       | **0.548**      | |
+| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | 0.388 |
+|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | 0.403 |
+|                   | SFT (Ours)      | **0.809**             | 0.790       | 0.741      | 0.54 |
+| MPDocVQA          | Simple          | 0.348             | 0.389       | 0.389      | 0.239 |
+|                   | Latin Prompting | 0.413             | 0.463       | 0.467      | 0.289 |
+|                   | SFT (Ours)      | 0.547             | **0.548**       | **0.548**      | 0.377 |
 |**Document Information Extraction**|
-| Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | |
-|                   | Latin Prompting | 0.442             | 0.735       | 0.478      | |
-|                   | SFT (Ours)      | 0.476             | **0.763**       | 0.633      | |
-| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | |
-|                   | Latin Prompting | 0.434             | **0.705**       | 0.599      | |
-|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | |
-| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | |
-|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | |
-|                   | SFT (Ours)      | 0.893             | **0.873**       | 0.288      | |
-| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | |
-|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | |
-|                   | SFT (Ours)      | 0.661             | **0.770**       | 0.685      | |
-| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | |
-|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | |
-|                   | SFT (Ours)      | **0.723**             | 0.711       | 0.720      | |
+| Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | 0.534 |
+|                   | Latin Prompting | 0.442             | 0.735       | 0.478      | 0.54 |
+|                   | SFT (Ours)      | 0.476             | **0.763**       | 0.633      | 0.6 |
+| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.608 |
+|                   | Latin Prompting | 0.434             | **0.705**       | 0.599      | 0.643 |
+|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.637 |
+| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.877 |
+|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | 0.858 |
+|                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | **0.931** |
+| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.305 |
+|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.351 |
+|                   | SFT (Ours)      | 0.661             | **0.770**       | 0.685      | 0.243 |
+| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.633 |
+|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.645 |
+|                   | SFT (Ours)      | **0.723**             | 0.711       | 0.720      | 0.687 |
 
 
 ### How To Execute
@@ -78,7 +78,7 @@ The following table shows the ANLS* score for the different models and prompt me
 2. Setup the keys
  - OpenAI: Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. 
  - Gemini: Ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
- - Mistral: Setup the `MISTRAL_API_KEY` env variable
+ - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT`
 3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
 4. Execute the corresponding benchmark script:
 

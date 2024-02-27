@@ -156,9 +156,9 @@ async def main():
         if anls is not None:
             anlss.append(anls)
 
-    tqdm.tqdm.write(
-        f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}"
-    )
+        tqdm.tqdm.write(
+            f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}"
+        )
 
 
 if __name__ == "__main__":

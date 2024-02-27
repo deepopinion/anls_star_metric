@@ -40,6 +40,24 @@ if not os.path.exists(GITHUB_REPO_PATH):
 #
 # Dataset
 #
+class LineItem(BaseModel):
+    channel: str | None = Field(
+        default=None, description="TV channel the ad will run on."
+    )
+    program_desc: str | None = Field(
+        default=None, description="Description of the program the ad will run on."
+    )
+    sub_amount: str | None = Field(default=None, description="Price of this line item.")
+    program_start_date: str | None = Field(
+        default=None,
+        description="Start date of the ad on this line item. Keep the format as found in the document.",
+    )
+    program_end_date: str | None = Field(
+        default=None,
+        description="End date of the ad on this line item. Keep the format as found in the document.",
+    )
+
+
 class ModelOutput(BaseModel):
     advertiser: str | None = Field(
         default=None, description="The name of the campaign that is buying the ad."
@@ -71,27 +89,9 @@ class ModelOutput(BaseModel):
         default=None,
         description="The end date of the ad campaign. Keep the format as found in the document.",
     )
-    line_items: list["LineItem"] | None = Field(
+    line_items: list[LineItem] | None = Field(
         default=None,
         description="The individual line items that make up the order.",
-    )
-
-
-class LineItem(BaseModel):
-    channel: str | None = Field(
-        default=None, description="TV channel the ad will run on."
-    )
-    program_desc: str | None = Field(
-        default=None, description="Description of the program the ad will run on."
-    )
-    sub_amount: str | None = Field(default=None, description="Price of this line item.")
-    program_start_date: str | None = Field(
-        default=None,
-        description="Start date of the ad on this line item. Keep the format as found in the document.",
-    )
-    program_end_date: str | None = Field(
-        default=None,
-        description="End date of the ad on this line item. Keep the format as found in the document.",
     )
 
 
@@ -179,10 +179,10 @@ async def evaluate_sample(ds, idx):
 
             anls = anls_score(label, output)
             return anls
-        except Exception:
+        except Exception as e:
             # E.g. if we reach the max token limit we set a score of 0
             # If the content filter blocks the response, we also set a score of 0
-            print("Error in sample: " + str(sample[0]) + ", setting score to 0")
+            print("Error (" + str(e) + ") in sample: " + str(sample[0]) + ", setting score to 0")
             return 0.0
 
 
