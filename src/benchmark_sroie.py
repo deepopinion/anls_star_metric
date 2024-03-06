@@ -5,7 +5,6 @@ import asyncio
 import tqdm.asyncio
 import json
 from PIL import Image
-from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field
 
 import utils
@@ -56,10 +55,6 @@ class ModelOutput(BaseModel):
     )
 
 
-# Set up a parser + inject instructions into the prompt template.
-parser = PydanticOutputParser(pydantic_object=ModelOutput)
-
-
 #
 # MAIN
 #
@@ -82,7 +77,7 @@ async def evaluate_sample(file_name, label):
         output = await utils.ainvoke_die(
             model=MODEL, 
             method=DOC_PROMPT_METHOD, 
-            parser=parser, 
+            pydantic_object=ModelOutput, 
             images=img,
         )
 

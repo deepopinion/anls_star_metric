@@ -4,6 +4,8 @@ from typing import Any
 from PIL import Image
 from ocr_wrapper import GoogleOCR
 
+from langchain.pydantic_v1 import BaseModel
+from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, HarmCategory, HarmBlockThreshold
@@ -171,10 +173,12 @@ def get_semaphore(model:str):
     return invoke_semaphore
 
 
-async def ainvoke_die(model:str, method:str, parser:Any, images:list|Any):
+async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:list|Any):
     # Limit parallelism
     async with get_semaphore(model):
         # Create chain
+        # Set up a parser + inject instructions into the prompt template.
+        parser = PydanticOutputParser(pydantic_object=pydantic_object)
         llm = create_llm(model=model)
         die_prompt = create_die_prompt(model)
         prompt = ChatPromptTemplate.from_messages(die_prompt)

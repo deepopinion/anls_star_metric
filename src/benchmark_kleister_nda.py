@@ -4,8 +4,6 @@ import os
 import random
 import asyncio
 import tqdm.asyncio
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from pdf2image import convert_from_path
 from langchain.pydantic_v1 import BaseModel, Field
 
@@ -22,7 +20,7 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/kleister-nda/"
-TEST_SIZE = 1
+TEST_SIZE = 50
 
 random.seed(42)
 
@@ -55,9 +53,6 @@ class ModelOutput(BaseModel):
         default=None,
         description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!"
     )
-
-# Set up a parser + inject instructions into the prompt template.
-parser = PydanticOutputParser(pydantic_object=ModelOutput)
 
 
 def load_dataset():
@@ -93,7 +88,7 @@ async def evaluate_sample(sample):
         output = await utils.ainvoke_die(
             model=MODEL, 
             method=DOC_PROMPT_METHOD, 
-            parser=parser, 
+            pydantic_object=ModelOutput, 
             images=images,
         )
 
