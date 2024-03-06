@@ -21,6 +21,9 @@ except ImportError:
     sft = None
 
 
+
+
+
 # Per default GoogleOCR is used. Any OCR scanner can be used that is supported by the ocr_wrapper :)
 ocr_scanner = GoogleOCR(ocr_samples=1, cache_file=".ocr_cache")
 
@@ -178,92 +181,113 @@ def create_vqa_prompt(model: str):
     ]
 
 
-async def throttle(model:str):
-    provider = get_provider(model)
-    if provider == "anthropic":
-        await asyncio.sleep(10)    
-
-def get_parallelism(model:str):
-    provider = get_provider(model)
-    if provider == "anthropic":
-        return 1
-    return 5
-
-invoke_semaphore = None
-def get_semaphore(model:str):
-    global invoke_semaphore
-    if invoke_semaphore is None:
-        p = get_parallelism(model)
-        invoke_semaphore = asyncio.Semaphore(p)
-    return invoke_semaphore
-
-
 async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:list|Any):
-    # Limit parallelism
-    async with get_semaphore(model):
-        # Create chain
-        # Set up a parser + inject instructions into the prompt template.
-        parser = PydanticOutputParser(pydantic_object=pydantic_object)
-        llm = create_llm(model=model)
-        die_prompt = create_die_prompt(model)
-        prompt = ChatPromptTemplate.from_messages(die_prompt)
-        chain = prompt | llm | parser
+    
+    # Create chain
+    # Set up a parser + inject instructions into the prompt template.
+    parser = PydanticOutputParser(pydantic_object=pydantic_object)
+    llm = create_llm(model=model)
+    die_prompt = create_die_prompt(model)
+    prompt = ChatPromptTemplate.from_messages(die_prompt)
+    chain = prompt | llm | parser
 
-        # Generate prompt (single & multipage)
-        if isinstance(images, list):
-            pages = []
-            for idx, img in enumerate(images):
-                page = await doc_to_prompt(img, method=method)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
-            doc_prompt = "\n".join(pages)
-        else:
-            doc_prompt = await doc_to_prompt(images, method=method)
+    # Generate prompt (single & multipage)
+    if isinstance(images, list):
+        pages = []
+        for idx, img in enumerate(images):
+            page = await doc_to_prompt(img, method=method)
+            page = "## Page " + str(idx+1) + "\n" + page + "\n"
+            pages.append(page)
+        doc_prompt = "\n".join(pages)
+    else:
+        doc_prompt = await doc_to_prompt(images, method=method)
 
-        # Inference model    
-        await throttle(model)
-        output = await chain.ainvoke(
-            {
-                "document": doc_prompt, 
-                "format_instructions": parser.get_format_instructions(),
-            }
-        )
+    # Inference model a single time
+    async def _invoke():
+        async with get_semaphore(model):
+            output = await chain.ainvoke(
+                {
+                    "document": doc_prompt, 
+                    "format_instructions": parser.get_format_instructions(),
+                }
+            )
+            return output
 
+    # Try a few times to invoke the model in case its overloaded etc.
+    output = await retry_invoke(_invoke)
+    
     # Return json DIE output
     output = output.dict()
     return output
 
 
 async def ainvoke_vqa(model:str, method:str, question: str, images:list|Any):
-    # Limit parallelism
-    async with get_semaphore(model):
-        # Create chain
-        # Set up a parser + inject instructions into the prompt template.
-        llm = create_llm(model=model)
-        vqa_prompt = create_vqa_prompt(model)
-        prompt = ChatPromptTemplate.from_messages(vqa_prompt)
-        chain = prompt | llm
+    # Create chain
+    # Set up a parser + inject instructions into the prompt template.
+    llm = create_llm(model=model)
+    vqa_prompt = create_vqa_prompt(model)
+    prompt = ChatPromptTemplate.from_messages(vqa_prompt)
+    chain = prompt | llm
 
-        # Generate prompt (single & multipage)
-        if isinstance(images, list):
-            pages = []
-            for idx, img in enumerate(images):
-                page = await doc_to_prompt(img, method=method)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
-            doc_prompt = "\n".join(pages)
-        else:
-            doc_prompt = await doc_to_prompt(images, method=method)
+    # Generate prompt (single & multipage)
+    if isinstance(images, list):
+        pages = []
+        for idx, img in enumerate(images):
+            page = await doc_to_prompt(img, method=method)
+            page = "## Page " + str(idx+1) + "\n" + page + "\n"
+            pages.append(page)
+        doc_prompt = "\n".join(pages)
+    else:
+        doc_prompt = await doc_to_prompt(images, method=method)
 
-        # Inference model    
-        await throttle(model)
-        output = await chain.ainvoke(
-            {
-                "document": doc_prompt, 
-                "question": question,
-            }
-        )
+    # Invoke a single time
+    async def _invoke():
+        async with get_semaphore(model):
+            # Inference model    
+            output = await chain.ainvoke(
+                {
+                    "document": doc_prompt, 
+                    "question": question,
+                }
+            )
+            return output
+
+    # Try a few times to invoke the model in case its overloaded etc.
+    output = await retry_invoke(_invoke)
 
     # Return answer
     output = output.content
     return output
+
+
+async def retry_invoke(_invoke):
+    throttling = 0
+    for r in range(5):
+        try:
+            if throttling > 0:
+                await asyncio.sleep(throttling)  
+
+            output = await _invoke()
+            break
+        except Exception as e:
+            # Increase throttling
+            throttling += 5
+
+            # Extra cooldown in case we trigger a overload (e.g. claude-3 is very sensitive to this)
+            await asyncio.sleep(10)
+
+            # Lets retry
+            print(f"(Warning) Retry {r+1} of 5. Failed with {e}")
+            if r >= 4:
+                raise e
+    return output
+
+invoke_semaphore = None
+def get_semaphore(model:str):
+    global invoke_semaphore
+    
+    provider = get_provider(model)
+    if invoke_semaphore is None:
+        p = 5 if provider != "anthropic" else 1
+        invoke_semaphore = asyncio.Semaphore(p)
+    return invoke_semaphore
