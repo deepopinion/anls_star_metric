@@ -78,18 +78,21 @@ The following table shows the ANLS* score for the different models and prompt me
 2. Setup the keys
  - OpenAI: Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. 
  - Gemini: Ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
- - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT`
+ - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT` (Azure)
+ - Anthropic: Setup the `ANTHROPIC_API_KEY` env variable
 3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script:
+4. Execute the corresponding benchmark script. For example:
 
 ```bash
     python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
 ```
 
-The following models are supported:
+The following models are benchmarked:
 - `gpt-3.5-turbo-16k`
-- `gpt-4-turbo`
+- `gpt-4-turbo` (Version `gpt-4-1106-preview`)
 - `gemini-pro`
+- `mistral-large`
+- `claude-3` (Version `claude-3-opus-20240229`)
 
 The following prompt methods are supported:
 - `simple`

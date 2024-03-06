@@ -18,11 +18,12 @@ from anls_star import anls_score
 MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
 DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 
+
 #
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/sroie/test/"
-PARALLELISM = 5
+PARALLELISM = 1
 TEST_SIZE = 50
 semaphore = asyncio.Semaphore(PARALLELISM)
 
@@ -66,21 +67,8 @@ parser = PydanticOutputParser(pydantic_object=ModelOutput)
 # Prepare the pipeline
 #
 llm = utils.create_llm(model=MODEL)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-             # Unfortunately, gemini-pro does not support the system message...
-            utils.sys_message(MODEL),
-            (
-                "You are a document information extraction system.\n"
-                "You are given a document and a json with keys that must be extracted from the document.\n"
-                "Here is the document:\n{document}\n"
-                "{format_instructions}\n"
-            ),
-        ),
-    ]
-)
-
+die_prompt = utils.create_die_prompt(MODEL)
+prompt = ChatPromptTemplate.from_messages(die_prompt)
 chain = prompt | llm | parser
 
 #
@@ -114,6 +102,7 @@ async def evaluate_sample(file_name, label):
             anls = anls_score(label, output)
             return anls
         except Exception as e:
+            print("(ERROR) " + str(e))
             return 0.0
             
 

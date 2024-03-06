@@ -6,6 +6,7 @@ from ocr_wrapper import GoogleOCR
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, HarmCategory, HarmBlockThreshold
 from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_anthropic import ChatAnthropic
 
 
 from utils import latin
@@ -47,6 +48,8 @@ def create_llm(*, model: str):
     
     if model == "gpt-4-turbo":
         model = "gpt-4-1106-preview"
+    elif model == "claude-3":
+        model = "claude-3-opus-20240229"
 
     settings = {
         "temperature": 0.0,
@@ -55,6 +58,7 @@ def create_llm(*, model: str):
         return ChatOpenAI(model=model, **settings)
 
     elif provider == "vertexai":
+        # We decided to use the same safety settings for all providers -- the default settings.
         # safety_settings = {
         #     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         #     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
@@ -78,6 +82,11 @@ def create_llm(*, model: str):
             mistral_api_key=api_key,
             **settings,
         )
+    elif provider == "anthropic":
+        return ChatAnthropic(
+            model_name=model, 
+            **settings,
+        )
 
     raise Exception(f"Unknown provider: {provider}")
 
@@ -85,12 +94,12 @@ def create_llm(*, model: str):
 def get_provider(model: str):
     if model.startswith("gpt"):
         return "openai"
-
     elif model.startswith("gemini"):
         return "vertexai"
-    
     elif model.startswith("mistral"):
         return "mistral"
+    elif model.startswith("claude"):
+        return "anthropic"
     
     raise Exception(f"Unknown model: {model}")
 
@@ -98,7 +107,30 @@ def get_provider(model: str):
 def sys_message(model: str):
     """  Gemini Pro does not support the system message.
     The provided "convert_system_message_to_human" arg is not working in langchain-google-vertexai 0.0.5.
-    So we convert it manually
+    Therefore we convert it manually.
     """
     provider = get_provider(model)
     return "user" if provider == "vertexai" else "system"
+
+def requires_human_message(model: str):
+    provider = get_provider(model)
+    return provider == "anthropic"
+
+
+def create_die_prompt(model: str):
+    sys_prompt = (
+        "You are a document information extraction system.\n"
+        "You are given a document and a json with keys that must be extracted from the document.\n"
+    )
+    doc_prompt = (
+        "Here is the document:\n{document}\n"
+        "{format_instructions}\n"
+    )
+    if not requires_human_message(model):
+        sys_prompt += doc_prompt
+        return [(sys_message(model), sys_prompt)]
+    
+    return [
+        (sys_message(model), sys_prompt),
+        ("human", doc_prompt),
+    ]

@@ -102,20 +102,8 @@ parser = PydanticOutputParser(pydantic_object=ModelOutput)
 # Prepare the pipeline
 #
 llm = utils.create_llm(model=MODEL)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            # Unfortunately, gemini-pro does not support the system message...
-            utils.sys_message(MODEL),
-            (
-                "You are a document information extraction system.\n"
-                "You are given a document and a json with keys that must be extracted from the document.\n"
-                "Here is the document:\n{document}\n"
-                "{format_instructions}\n"
-            ),
-        ),
-    ]
-)
+die_prompt = utils.create_die_prompt(MODEL)
+prompt = ChatPromptTemplate.from_messages(die_prompt)
 
 chain = prompt | llm | parser
 
