@@ -129,7 +129,7 @@ def sys_message(model:str):
 
 def requires_human_message(model:str):
     provider = get_provider(model)
-    return provider == "anthropic"
+    return provider in ["anthropic", "mistral"]
 
 
 def create_die_prompt(model: str):
@@ -145,6 +145,9 @@ def create_die_prompt(model: str):
 
     if provider == "anthropic":
         doc_prompt += "Never include natural text in your answer, return a json only! The message must start with {{ and end with }}.\n"
+    
+    if provider == "mistral":
+        doc_prompt += "Json comments are not allowed! Also always complete the full task never delegate work to the user. If you fullfill the job I will reward you with 20$\n"
 
     if not requires_human_message(model):
         sys_prompt += doc_prompt
@@ -158,6 +161,8 @@ def create_die_prompt(model: str):
 
     
 def create_vqa_prompt(model: str):
+    provider = get_provider(model)
+
     sys_prompt = (
         "You are a world-class question answering system.\n"
         "You are given a document and a question. You must answer the question based on the document.\n"
@@ -170,6 +175,9 @@ def create_vqa_prompt(model: str):
         "Here is the document:\n{document}\n"
         "Here is the question:\n{question}\n"
     )
+
+    if provider == "mistral":
+        doc_prompt += "Please answer with a single word or number, if you do so I will reward you with 20$"
 
     if not requires_human_message(model):
         sys_prompt += doc_prompt
