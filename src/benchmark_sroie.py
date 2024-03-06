@@ -113,7 +113,12 @@ async def main():
         anlss = [x for x in anlss if x is not None]
         tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
 
-
+    utils.log_result(
+        "SROIE",
+        model=MODEL, 
+        method=DOC_PROMPT_METHOD, 
+        anlss=anlss,
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

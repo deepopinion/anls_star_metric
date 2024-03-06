@@ -59,7 +59,7 @@ The following table shows the ANLS* score for the different models and prompt me
 | Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | 0.534     |
 |                   | Latin Prompting | 0.442             | 0.735       | 0.478      | 0.54      |
 |                   | SFT (Ours)      | 0.476             | **0.763**   | 0.633      | 0.6       |
-| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.608     |
+| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.608     | 0.682 |
 |                   | Latin Prompting | 0.434             | **0.705**   | 0.599      | 0.643     |
 |                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.637     |
 | SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.877     | 0.883 |

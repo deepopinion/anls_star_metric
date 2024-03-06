@@ -22,7 +22,7 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/kleister-nda/"
-TEST_SIZE = 50
+TEST_SIZE = 1
 
 random.seed(42)
 
@@ -127,6 +127,12 @@ async def main():
         anlss = [x for x in anlss if x is not None]
         tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
 
+    utils.log_result(
+        "Kleister NDA",
+        model=MODEL, 
+        method=DOC_PROMPT_METHOD, 
+        anlss=anlss,
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

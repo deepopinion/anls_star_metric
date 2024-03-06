@@ -93,6 +93,14 @@ def create_llm(*, model:str):
     raise Exception(f"Unknown provider: {provider}")
 
 
+def log_result(dataset: str, *, model:str, method:str, anlss: list[float]):
+    anls_sum = sum(anlss)
+    anls_len = len(anlss)
+    anls_mean = round(anls_sum / anls_len, 3) if anls_len > 0 else 0.0
+
+    with open("results.txt", "a") as f:
+        f.write(f"{dataset} | {model} | {method} | ANLS*: {anls_mean}\n")
+
 def get_provider(model:str):
     if model.startswith("gpt"):
         return "openai"
