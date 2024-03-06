@@ -1,7 +1,7 @@
 import asyncio
 import os
 from typing import Any
-from PIL import Image
+import time
 from ocr_wrapper import GoogleOCR
 
 from langchain.pydantic_v1 import BaseModel
@@ -204,17 +204,17 @@ async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:l
 
     # Inference model a single time
     async def _invoke():
-        async with get_semaphore(model):
-            output = await chain.ainvoke(
-                {
-                    "document": doc_prompt, 
-                    "format_instructions": parser.get_format_instructions(),
-                }
-            )
-            return output
+        output = await chain.ainvoke(
+            {
+                "document": doc_prompt, 
+                "format_instructions": parser.get_format_instructions(),
+            }
+        )
+        return output
 
     # Try a few times to invoke the model in case its overloaded etc.
-    output = await retry_invoke(_invoke)
+    async with get_semaphore(model):
+        output = await retry_invoke(_invoke)
     
     # Return json DIE output
     output = output.dict()
@@ -242,18 +242,18 @@ async def ainvoke_vqa(model:str, method:str, question: str, images:list|Any):
 
     # Invoke a single time
     async def _invoke():
-        async with get_semaphore(model):
-            # Inference model    
-            output = await chain.ainvoke(
-                {
-                    "document": doc_prompt, 
-                    "question": question,
-                }
-            )
-            return output
+        # Inference model    
+        output = await chain.ainvoke(
+            {
+                "document": doc_prompt, 
+                "question": question,
+            }
+        )
+        return output
 
     # Try a few times to invoke the model in case its overloaded etc.
-    output = await retry_invoke(_invoke)
+    async with get_semaphore(model):
+        output = await retry_invoke(_invoke)
 
     # Return answer
     output = output.content
@@ -270,14 +270,16 @@ async def retry_invoke(_invoke):
             output = await _invoke()
             break
         except Exception as e:
-            # Increase throttling
-            throttling += 5
-
-            # Extra cooldown in case we trigger a overload (e.g. claude-3 is very sensitive to this)
-            await asyncio.sleep(10)
-
             # Lets retry
             print(f"(Warning) Retry {r+1} of 5. Failed with {e}")
+
+            # Increase throttling
+            throttling += 5
+            
+            # Extra cooldown for the whole system in case we trigger a overload
+            # Therefore, we use time.sleep instead of asyncio.sleep
+            time.sleep(5)
+
             if r >= 4:
                 raise e
     return output

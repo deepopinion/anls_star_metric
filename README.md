@@ -49,9 +49,9 @@ The following table shows the ANLS* score for the different models and prompt me
 | Dataset           | Method     | gpt-3.5-turbo-16k | gpt-4-turbo | gemini-pro | mistral-large  | claude-3 |
 | ----------------- | ---------- | ----------------- | ----------- | ---------- | -------------- | -------- |
 |**VQA**|
-| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | 0.388     |
-|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | 0.403     |
-|                   | SFT (Ours)      | **0.809**         | 0.790       | 0.741      | 0.54      |
+| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | 0.388     | 0.768
+|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | 0.403     | 0.762
+|                   | SFT (Ours)      | **0.809**         | 0.790       | 0.741      | 0.54      | 0.831
 | MPDocVQA          | Simple          | 0.348             | 0.389       | 0.389      | 0.239     |
 |                   | Latin Prompting | 0.413             | 0.463       | 0.467      | 0.289     |
 |                   | SFT (Ours)      | 0.547             | **0.548**   | **0.548**  | 0.377     |
