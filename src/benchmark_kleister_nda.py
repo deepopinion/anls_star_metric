@@ -22,7 +22,6 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/kleister-nda/"
-PARALLELISM = 5
 TEST_SIZE = 50
 
 random.seed(42)
@@ -60,15 +59,6 @@ class ModelOutput(BaseModel):
 # Set up a parser + inject instructions into the prompt template.
 parser = PydanticOutputParser(pydantic_object=ModelOutput)
 
-#
-# Prepare the pipeline
-#
-llm = utils.create_llm(model=MODEL)
-die_prompt = utils.create_die_prompt(MODEL)
-prompt = ChatPromptTemplate.from_messages(die_prompt)
-
-chain = prompt | llm | parser
-
 
 def load_dataset():
     in_xz_file = os.path.join(GITHUB_REPO_PATH, "train/in.tsv.xz")
@@ -93,32 +83,27 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(PARALLELISM)
-
 async def evaluate_sample(sample):
-    async with semaphore:
-        try:
-            file_name = sample[0]
-            label = sample[1]
-            
-            file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
-            images = await asyncio.to_thread(convert_from_path, file_path)
-            pages = []
-            for idx, img in enumerate(images):
-                page = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
+    try:
+        file_name = sample[0]
+        label = sample[1]
+        
+        file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
+        images = await asyncio.to_thread(convert_from_path, file_path)
+        output = await utils.ainvoke_die(
+            model=MODEL, 
+            method=DOC_PROMPT_METHOD, 
+            parser=parser, 
+            images=images,
+        )
 
-            doc = "\n".join(pages)
-            output = await chain.ainvoke({"document": doc, "format_instructions": parser.get_format_instructions()})
-            output = output.dict()
-
-            anls = anls_score(label, output)
-            return anls
-        except Exception:
-            # E.g. if we reach the max token limit we set a score of 0
-            # If the content filter blocks the response, we also set a score of 0
-            return 0.0
+        anls = anls_score(label, output)
+        return anls
+    except Exception as e:
+        # E.g. if we reach the max token limit we set a score of 0
+        # If the content filter blocks the response, we also set a score of 0
+        print("(ERROR) " + str(e))
+        return 0.0
 
 
 #

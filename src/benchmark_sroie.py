@@ -5,7 +5,6 @@ import asyncio
 import tqdm.asyncio
 import json
 from PIL import Image
-from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field
 
@@ -23,10 +22,7 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/sroie/test/"
-PARALLELISM = 1
 TEST_SIZE = 50
-semaphore = asyncio.Semaphore(PARALLELISM)
-
 random.seed(42)
 
 # Check availability of dataset
@@ -63,13 +59,6 @@ class ModelOutput(BaseModel):
 # Set up a parser + inject instructions into the prompt template.
 parser = PydanticOutputParser(pydantic_object=ModelOutput)
 
-#
-# Prepare the pipeline
-#
-llm = utils.create_llm(model=MODEL)
-die_prompt = utils.create_die_prompt(MODEL)
-prompt = ChatPromptTemplate.from_messages(die_prompt)
-chain = prompt | llm | parser
 
 #
 # MAIN
@@ -86,25 +75,23 @@ def load_dataset():
 
 
 async def evaluate_sample(file_name, label):
-    async with semaphore:
-        try:
-            file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
-            img = Image.open(file_path)                
-            prompt = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-            output = await chain.ainvoke(
-                {
-                    "document": prompt, 
-                    "format_instructions": parser.get_format_instructions(),
-                }
-            )
-            output = output.dict()
+    try:
+        
+        file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
+        img = Image.open(file_path)                
+        output = await utils.ainvoke_die(
+            model=MODEL, 
+            method=DOC_PROMPT_METHOD, 
+            parser=parser, 
+            images=img,
+        )
 
-            anls = anls_score(label, output)
-            return anls
-        except Exception as e:
-            print("(ERROR) " + str(e))
-            return 0.0
-            
+        anls = anls_score(label, output)
+        return anls
+    except Exception as e:
+        print("(ERROR) " + str(e))
+        return 0.0
+        
 
 async def main():
     ds = load_dataset()

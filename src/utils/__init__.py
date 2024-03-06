@@ -3,6 +3,8 @@ from utils.misc import (
     doc_to_prompt, 
     sys_message, 
     create_die_prompt,
+    throttle,
+    ainvoke_die,
 )
 
 __all__ = [
@@ -10,4 +12,6 @@ __all__ = [
     "doc_to_prompt",
     "sys_message",
     "create_die_prompt",
+    "throttle",
+    "ainvoke_die",
 ]
