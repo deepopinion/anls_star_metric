@@ -5,7 +5,9 @@ from utils.misc import (
     create_die_prompt,
     throttle,
     ainvoke_die,
+    ainvoke_vqa,
     log_result,
+
 )
 
 __all__ = [
@@ -15,5 +17,6 @@ __all__ = [
     "create_die_prompt",
     "throttle",
     "ainvoke_die",
+    "ainvoke_vqa",
     "log_result",
 ]

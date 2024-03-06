@@ -95,8 +95,6 @@ async def evaluate_sample(sample):
         anls = anls_score(label, output)
         return anls
     except Exception as e:
-        # E.g. if we reach the max token limit we set a score of 0
-        # If the content filter blocks the response, we also set a score of 0
         print("(ERROR) " + str(e))
         return 0.0
 

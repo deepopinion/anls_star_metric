@@ -153,6 +153,31 @@ def create_die_prompt(model: str):
     ]
 
 
+    
+def create_vqa_prompt(model: str):
+    sys_prompt = (
+        "You are a world-class question answering system.\n"
+        "You are given a document and a question. You must answer the question based on the document.\n"
+        "Precisely answer the question without any additional text.\n"
+        "Its very important to NOT write full sentences!\n"
+        "Note: Ensure that the is precisely contained in the original document.\n"
+    )
+
+    doc_prompt = (
+        "Here is the document:\n{document}\n"
+        "Here is the question:\n{question}\n"
+    )
+
+    if not requires_human_message(model):
+        sys_prompt += doc_prompt
+        return [(sys_message(model), sys_prompt)]
+    
+    return [
+        (sys_message(model), sys_prompt),
+        ("human", doc_prompt),
+    ]
+
+
 async def throttle(model:str):
     provider = get_provider(model)
     if provider == "anthropic":
@@ -206,4 +231,39 @@ async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:l
 
     # Return json DIE output
     output = output.dict()
+    return output
+
+
+async def ainvoke_vqa(model:str, method:str, question: str, images:list|Any):
+    # Limit parallelism
+    async with get_semaphore(model):
+        # Create chain
+        # Set up a parser + inject instructions into the prompt template.
+        llm = create_llm(model=model)
+        vqa_prompt = create_vqa_prompt(model)
+        prompt = ChatPromptTemplate.from_messages(vqa_prompt)
+        chain = prompt | llm
+
+        # Generate prompt (single & multipage)
+        if isinstance(images, list):
+            pages = []
+            for idx, img in enumerate(images):
+                page = await doc_to_prompt(img, method=method)
+                page = "## Page " + str(idx+1) + "\n" + page + "\n"
+                pages.append(page)
+            doc_prompt = "\n".join(pages)
+        else:
+            doc_prompt = await doc_to_prompt(images, method=method)
+
+        # Inference model    
+        await throttle(model)
+        output = await chain.ainvoke(
+            {
+                "document": doc_prompt, 
+                "question": question,
+            }
+        )
+
+    # Return answer
+    output = output.content
     return output
