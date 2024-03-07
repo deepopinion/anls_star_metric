@@ -1,8 +1,10 @@
+import hashlib
 import asyncio
 import os
 from typing import Any
 import time
 from ocr_wrapper import GoogleOCR
+import json
 
 from langchain.pydantic_v1 import BaseModel
 from langchain.output_parsers import PydanticOutputParser
@@ -189,8 +191,42 @@ def create_vqa_prompt(model: str):
     ]
 
 
-async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:list|Any):
+def read_cache(benchmark:str, model:str, method: str, images):
+    if isinstance(images, list):
+        image = images[0]
+    else:
+        image = images
+        
+    img_hash = hashlib.md5(image.tobytes()).hexdigest()
+    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            return f.read()
+
+    return None
+
+def write_cache(benchmark:str, model:str, method: str, images, output):
+    if isinstance(images, list):
+        image = images[0]
+    else:
+        image = images
+        
+    img_hash = hashlib.md5(image.tobytes()).hexdigest()
+    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    with open(cache_file, "w") as f:
+        f.write(output)
+
+async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:BaseModel, images:list|Any):
     
+    # Hash model, method + images
+    cached_result = read_cache(benchmark, model, method, images)
+    if cached_result:
+        print("(Info) Using cached result")
+        obj = json.loads(cached_result)
+        return obj
+
     # Create chain
     # Set up a parser + inject instructions into the prompt template.
     parser = PydanticOutputParser(pydantic_object=pydantic_object)
@@ -226,10 +262,17 @@ async def ainvoke_die(model:str, method:str, pydantic_object:BaseModel, images:l
     
     # Return json DIE output
     output = output.dict()
+    write_cache(benchmark, model, method, images, json.dumps(output))
     return output
 
 
-async def ainvoke_vqa(model:str, method:str, question: str, images:list|Any):
+async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, images:list|Any):
+    # Check cache first
+    cached_result = read_cache(benchmark, model, method, images)
+    if cached_result:
+        print("(Info) Using cached result")
+        return cached_result
+
     # Create chain
     # Set up a parser + inject instructions into the prompt template.
     llm = create_llm(model=model)
@@ -264,6 +307,7 @@ async def ainvoke_vqa(model:str, method:str, question: str, images:list|Any):
         output = await retry_invoke(_invoke)
 
     # Return answer
+    write_cache(benchmark, model, method, images, output.content)
     output = output.content
     return output
 

@@ -45,6 +45,7 @@ async def evaluate_sample(sample):
         img = Image.open(file_path)
 
         answer = await utils.ainvoke_vqa(
+            benchmark="doc_vqa",
             model=MODEL,
             method=DOC_PROMPT_METHOD,
             question=question,

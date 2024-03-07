@@ -85,6 +85,7 @@ async def evaluate_sample(ds, idx):
         file_path = os.path.join(GITHUB_REPO_PATH, "pdfs/", file_name)
         images = await asyncio.to_thread(convert_from_path, file_path)
         output = await utils.ainvoke_die(
+            benchmark="vrdu_registration",
             model=MODEL,
             method=DOC_PROMPT_METHOD,
             pydantic_object=ModelOutput,

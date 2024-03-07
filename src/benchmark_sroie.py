@@ -75,6 +75,7 @@ async def evaluate_sample(file_name, label):
         file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
         img = Image.open(file_path)                
         output = await utils.ainvoke_die(
+            benchmark="sroie",
             model=MODEL, 
             method=DOC_PROMPT_METHOD, 
             pydantic_object=ModelOutput, 
