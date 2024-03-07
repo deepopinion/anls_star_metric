@@ -191,33 +191,6 @@ def create_vqa_prompt(model: str):
     ]
 
 
-def read_cache(benchmark:str, model:str, method: str, images):
-    if isinstance(images, list):
-        image = images[0]
-    else:
-        image = images
-        
-    img_hash = hashlib.md5(image.tobytes()).hexdigest()
-    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
-    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-    if os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
-            return f.read()
-
-    return None
-
-def write_cache(benchmark:str, model:str, method: str, images, output):
-    if isinstance(images, list):
-        image = images[0]
-    else:
-        image = images
-        
-    img_hash = hashlib.md5(image.tobytes()).hexdigest()
-    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
-    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-    with open(cache_file, "w") as f:
-        f.write(output)
-
 async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:BaseModel, images:list|Any):
     
     # Hash model, method + images
@@ -235,19 +208,18 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
     prompt = ChatPromptTemplate.from_messages(die_prompt)
     chain = prompt | llm | parser
 
-    # Generate prompt (single & multipage)
-    if isinstance(images, list):
-        pages = []
-        for idx, img in enumerate(images):
-            page = await doc_to_prompt(img, method=method)
-            page = "## Page " + str(idx+1) + "\n" + page + "\n"
-            pages.append(page)
-        doc_prompt = "\n".join(pages)
-    else:
-        doc_prompt = await doc_to_prompt(images, method=method)
-
     # Inference model a single time
     async def _invoke():
+        if isinstance(images, list):
+            pages = []
+            for idx, img in enumerate(images):
+                page = await doc_to_prompt(img, method=method)
+                page = "## Page " + str(idx+1) + "\n" + page + "\n"
+                pages.append(page)
+            doc_prompt = "\n".join(pages)
+        else:
+            doc_prompt = await doc_to_prompt(images, method=method)
+        
         output = await chain.ainvoke(
             {
                 "document": doc_prompt, 
@@ -280,19 +252,19 @@ async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, image
     prompt = ChatPromptTemplate.from_messages(vqa_prompt)
     chain = prompt | llm
 
-    # Generate prompt (single & multipage)
-    if isinstance(images, list):
-        pages = []
-        for idx, img in enumerate(images):
-            page = await doc_to_prompt(img, method=method)
-            page = "## Page " + str(idx+1) + "\n" + page + "\n"
-            pages.append(page)
-        doc_prompt = "\n".join(pages)
-    else:
-        doc_prompt = await doc_to_prompt(images, method=method)
-
     # Invoke a single time
     async def _invoke():
+        # Generate prompt (single & multipage)
+        if isinstance(images, list):
+            pages = []
+            for idx, img in enumerate(images):
+                page = await doc_to_prompt(img, method=method)
+                page = "## Page " + str(idx+1) + "\n" + page + "\n"
+                pages.append(page)
+            doc_prompt = "\n".join(pages)
+        else:
+            doc_prompt = await doc_to_prompt(images, method=method)
+            
         # Inference model    
         output = await chain.ainvoke(
             {
@@ -345,3 +317,32 @@ def get_semaphore(model:str):
         p = 5 if provider != "anthropic" else 1
         invoke_semaphore = asyncio.Semaphore(p)
     return invoke_semaphore
+
+
+def read_cache(benchmark:str, model:str, method: str, images):
+    img_hash = create_image_hash(images)
+    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            return f.read()
+
+    return None
+
+
+def write_cache(benchmark:str, model:str, method: str, images, output):
+    img_hash = create_image_hash(images)
+    cache_file = f".cache/{benchmark}/{model}/{method}/{img_hash}.json"
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    with open(cache_file, "w") as f:
+        f.write(output)
+
+
+def create_image_hash(images):
+    if not isinstance(images, list):
+        images = [images]
+    
+    all_bytes = b""
+    for image in images:
+        all_bytes += image.tobytes()
+    return hashlib.md5(all_bytes).hexdigest()
