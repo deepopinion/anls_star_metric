@@ -59,14 +59,14 @@ The following table shows the ANLS* score for the different models and prompt me
 | Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | 0.652          | **0.800** |
 |                   | Latin Prompting | 0.442             | 0.735       | 0.478      | 0.576          | 0.787     |
 |                   | SFT (Ours)      | 0.476             | 0.763       | 0.633      | 0.657          | 0.786     |
-| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.637          |
-|                   | Latin Prompting | 0.434             | **0.705**   | 0.599      | 0.624          |
-|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.641          |
-| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.855          |
-|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | 0.863          |
-|                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | **0.905**      |
-| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.386          |
-|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.435          |
+| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.637          | 0.673     |
+|                   | Latin Prompting | 0.434             | **0.705**   | 0.599      | 0.624          | 0.67      |
+|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.641          | 0.677     |
+| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.855          | 0.933     |
+|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | 0.863          | 0.926     |
+|                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | 0.905          | **0.949** |
+| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.386          | 0.577     |
+|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.435          | 0.608     |
 |                   | SFT (Ours)      | 0.661             | **0.770**   | 0.685      | 0.594          |
 | VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.579          |
 |                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.587          |
