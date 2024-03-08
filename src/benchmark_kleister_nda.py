@@ -4,8 +4,6 @@ import os
 import random
 import asyncio
 import tqdm.asyncio
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from pdf2image import convert_from_path
 from langchain.pydantic_v1 import BaseModel, Field
 
@@ -22,7 +20,6 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/kleister-nda/"
-PARALLELISM = 5
 TEST_SIZE = 50
 
 random.seed(42)
@@ -57,30 +54,6 @@ class ModelOutput(BaseModel):
         description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!"
     )
 
-# Set up a parser + inject instructions into the prompt template.
-parser = PydanticOutputParser(pydantic_object=ModelOutput)
-
-#
-# Prepare the pipeline
-#
-llm = utils.create_llm(model=MODEL)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-             # Unfortunately, gemini-pro does not support the system message...
-            utils.sys_message(MODEL),
-            (
-                "You are a document information extraction system.\n"
-                "You are given a document and a json with keys that must be extracted from the document.\n"
-                "Here is the document:\n{document}\n"
-                "{format_instructions}\n"
-            ),
-        ),
-    ]
-)
-
-chain = prompt | llm | parser
-
 
 def load_dataset():
     in_xz_file = os.path.join(GITHUB_REPO_PATH, "train/in.tsv.xz")
@@ -105,32 +78,26 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(PARALLELISM)
-
 async def evaluate_sample(sample):
-    async with semaphore:
-        try:
-            file_name = sample[0]
-            label = sample[1]
-            
-            file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
-            images = await asyncio.to_thread(convert_from_path, file_path)
-            pages = []
-            for idx, img in enumerate(images):
-                page = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
+    try:
+        file_name = sample[0]
+        label = sample[1]
+        
+        file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
+        images = await asyncio.to_thread(convert_from_path, file_path)
+        output = await utils.ainvoke_die(
+            benchmark="kleister_nda",
+            model=MODEL, 
+            method=DOC_PROMPT_METHOD, 
+            pydantic_object=ModelOutput, 
+            images=images,
+        )
 
-            doc = "\n".join(pages)
-            output = await chain.ainvoke({"document": doc, "format_instructions": parser.get_format_instructions()})
-            output = output.dict()
-
-            anls = anls_score(label, output)
-            return anls
-        except Exception:
-            # E.g. if we reach the max token limit we set a score of 0
-            # If the content filter blocks the response, we also set a score of 0
-            return 0.0
+        anls = anls_score(label, output)
+        return anls
+    except Exception as e:
+        print("(ERROR) " + str(e))
+        return 0.0
 
 
 #
@@ -154,6 +121,12 @@ async def main():
         anlss = [x for x in anlss if x is not None]
         tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
 
+    utils.log_result(
+        "Kleister NDA",
+        model=MODEL, 
+        method=DOC_PROMPT_METHOD, 
+        anlss=anlss,
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -5,8 +5,6 @@ import asyncio
 import tqdm.asyncio
 import json
 from PIL import Image
-from langchain_core.prompts import ChatPromptTemplate
-from vertexai.generative_models._generative_models import ResponseBlockedError
 
 import utils
 from anls_star import anls_score
@@ -21,9 +19,7 @@ DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 # Fixed Benchmark Settings
 #
 TEST_SIZE = 50
-PARALLELISM = 4
 DATASET_PATH = "../datasets/MPDocVQA"
-
 random.seed(42)
 
 # Check availability of dataset
@@ -34,61 +30,33 @@ if not os.path.exists(val_json_file):
     )
     exit()
 
-
-#
-# Prepare the pipeline
-#
-llm = utils.create_llm(model=MODEL)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-             # Unfortunately, gemini-pro does not support the system message...
-            utils.sys_message(MODEL),
-            (
-                "You are a world-class question answering system.\n"
-                "You are given a document and a question. You must answer the question based on the document.\n"
-                "Precisely answer the question without any additional text.\n"
-                "Its very important to NOT write full sentences!\n"
-                "Note: Ensure that the is precisely contained in the original document.\n"
-                "Here is the document:\n{document}\n"
-                "Here is the question:\n{question}\n"
-            ),
-        ),
-    ]
-)
-chain = prompt | llm
-
-
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(PARALLELISM)
-
 async def evaluate_sample(sample):
-    async with semaphore:
-        try:
-            question = sample["question"]
-            answers = tuple([a for a in sample["answers"]])
-            page_ids = sample["page_ids"]
-
-            pages = []
-            for idx, page_id in enumerate(page_ids):
-                file_path = os.path.join(DATASET_PATH, "documents", page_id + ".jpg")
-                img = Image.open(file_path)
-                page = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-                pages.append(f"\n## Page {idx+1}\n" + page)
-
-            page = "\n".join(pages)
+    try:
+        question = sample["question"]
+        answers = tuple([a for a in sample["answers"]])
+        page_ids = sample["page_ids"]
+        images = []
+        for page_id in page_ids:
+            file_path = os.path.join(DATASET_PATH, "documents", page_id + ".jpg")
             img = Image.open(file_path)
-            page = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-            answer = await chain.ainvoke({"document": page, "question": question})
-            answer = answer.content
+            images.append(img)
 
-            anls = anls_score(answers, answer)
-            return anls
-        except Exception as e:
-            print(f"(Warning) Failed to process sample: {e}")
-            return 0.0
+        answer = await utils.ainvoke_vqa(
+            benchmark="mp_doc_vqa",
+            model=MODEL,
+            method=DOC_PROMPT_METHOD,
+            question=question,
+            images=img            
+        )
+
+        anls = anls_score(answers, answer)
+        return anls
+    except Exception as e:
+        print("(ERROR) " + str(e))
+        return 0.0
 
 
 #
@@ -112,6 +80,12 @@ async def main():
         anlss = [x for x in anlss if x is not None]
         tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
 
+    utils.log_result(
+        "MPDocVQA",
+        model=MODEL, 
+        method=DOC_PROMPT_METHOD, 
+        anlss=anlss,
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

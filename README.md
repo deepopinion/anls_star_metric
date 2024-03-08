@@ -46,31 +46,31 @@ The following table shows the ANLS* score for the different models and prompt me
 
 
 <!-- Use the following page to convert to latex for the paper https://tableconvert.com/markdown-to-latex -->
-| Dataset           | Method     | gpt-3.5-turbo-16k | gpt-4-turbo | gemini-pro | mistral-large |
-| ----------------- | ---------- | ----------------- | ----------- | ---------- | ------------- |
+| Dataset           | Method          | gpt-3.5-turbo-16k | gpt-4-turbo | gemini-pro | mistral-large  | claude-3  |
+| ----------------- | --------------- | ----------------- | ----------- | ---------- | -------------- | --------- |
 |**VQA**|
-| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | 0.388 |
-|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | 0.403 |
-|                   | SFT (Ours)      | **0.809**             | 0.790       | 0.741      | 0.54 |
-| MPDocVQA          | Simple          | 0.348             | 0.389       | 0.389      | 0.239 |
-|                   | Latin Prompting | 0.413             | 0.463       | 0.467      | 0.289 |
-|                   | SFT (Ours)      | 0.547             | **0.548**       | **0.548**      | 0.377 |
+| DocVQA            | Simple          | 0.586             | 0.607       | 0.586      | 0.445          | 0.768     |
+|                   | Latin Prompting | 0.659             | 0.699       | 0.676      | 0.447          | 0.762     |
+|                   | SFT (Ours)      | 0.809             | 0.790       | 0.741      | 0.648          | **0.831** |
+| MPDocVQA          | Simple          | 0.348             | 0.389       | 0.389      | 0.249          | 0.507     |
+|                   | Latin Prompting | 0.413             | 0.463       | 0.467      | 0.216          | 0.46      |
+|                   | SFT (Ours)      | 0.547             | 0.548       | 0.548      | 0.377          | **0.559** |
 |**Document Information Extraction**|
-| Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | 0.534 |
-|                   | Latin Prompting | 0.442             | 0.735       | 0.478      | 0.54 |
-|                   | SFT (Ours)      | 0.476             | **0.763**       | 0.633      | 0.6 |
-| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.608 |
-|                   | Latin Prompting | 0.434             | **0.705**       | 0.599      | 0.643 |
-|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.637 |
-| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.877 |
-|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | 0.858 |
-|                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | **0.931** |
-| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.305 |
-|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.351 |
-|                   | SFT (Ours)      | 0.661             | **0.770**       | 0.685      | 0.243 |
-| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.633 |
-|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.645 |
-|                   | SFT (Ours)      | **0.723**             | 0.711       | 0.720      | 0.687 |
+| Kleister Charity  | Simple          | 0.490             | 0.743       | 0.583      | 0.652          | **0.800** |
+|                   | Latin Prompting | 0.442             | 0.735       | 0.478      | 0.576          | 0.787     |
+|                   | SFT (Ours)      | 0.476             | 0.763       | 0.633      | 0.657          | 0.786     |
+| Kleister NDA      | Simple          | 0.343             | 0.695       | 0.623      | 0.637          | 0.673     |
+|                   | Latin Prompting | 0.434             | **0.705**   | 0.599      | 0.624          | 0.67      |
+|                   | SFT (Ours)      | 0.355             | 0.703       | 0.552      | 0.641          | 0.677     |
+| SROIE             | Simple          | 0.874             | 0.835       | 0.263      | 0.855          | 0.933     |
+|                   | Latin Prompting | 0.849             | 0.851       | 0.371      | 0.863          | 0.926     |
+|                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | 0.905          | **0.949** |
+| VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.386          | 0.577     |
+|                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.435          | 0.608     |
+|                   | SFT (Ours)      | 0.661             | **0.770**   | 0.685      | 0.594          | 0.633     |
+| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.579          | 0.685     |
+|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.587          | 0.715     |
+|                   | SFT (Ours)      | **0.723**         | 0.711       | 0.720      | 0.639          | 0.705
 
 
 ### How To Execute
@@ -78,18 +78,21 @@ The following table shows the ANLS* score for the different models and prompt me
 2. Setup the keys
  - OpenAI: Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. 
  - Gemini: Ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
- - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT`
+ - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT` (Azure)
+ - Anthropic: Setup the `ANTHROPIC_API_KEY` env variable
 3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script:
+4. Execute the corresponding benchmark script. For example:
 
 ```bash
     python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
 ```
 
-The following models are supported:
+The following models are benchmarked:
 - `gpt-3.5-turbo-16k`
-- `gpt-4-turbo`
-- `gemini-pro`
+- `gpt-4-turbo`         (Version `gpt-4-1106-preview`)
+- `gemini-pro`          (Version 1.0)
+- `mistral-large`       (Version 03/2024)
+- `claude-3`            (Version `claude-3-opus-20240229`)
 
 The following prompt methods are supported:
 - `simple`

@@ -5,8 +5,6 @@ import asyncio
 import tqdm.asyncio
 import json
 from PIL import Image
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field
 
 import utils
@@ -18,14 +16,12 @@ from anls_star import anls_score
 MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
 DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
 
+
 #
 # Fixed Benchmark Settings
 #
 GITHUB_REPO_PATH = "../datasets/sroie/test/"
-PARALLELISM = 5
 TEST_SIZE = 50
-semaphore = asyncio.Semaphore(PARALLELISM)
-
 random.seed(42)
 
 # Check availability of dataset
@@ -59,30 +55,6 @@ class ModelOutput(BaseModel):
     )
 
 
-# Set up a parser + inject instructions into the prompt template.
-parser = PydanticOutputParser(pydantic_object=ModelOutput)
-
-#
-# Prepare the pipeline
-#
-llm = utils.create_llm(model=MODEL)
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-             # Unfortunately, gemini-pro does not support the system message...
-            utils.sys_message(MODEL),
-            (
-                "You are a document information extraction system.\n"
-                "You are given a document and a json with keys that must be extracted from the document.\n"
-                "Here is the document:\n{document}\n"
-                "{format_instructions}\n"
-            ),
-        ),
-    ]
-)
-
-chain = prompt | llm | parser
-
 #
 # MAIN
 #
@@ -98,24 +70,24 @@ def load_dataset():
 
 
 async def evaluate_sample(file_name, label):
-    async with semaphore:
-        try:
-            file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
-            img = Image.open(file_path)                
-            prompt = await utils.doc_to_prompt(img, method=DOC_PROMPT_METHOD)
-            output = await chain.ainvoke(
-                {
-                    "document": prompt, 
-                    "format_instructions": parser.get_format_instructions(),
-                }
-            )
-            output = output.dict()
+    try:
+        
+        file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
+        img = Image.open(file_path)                
+        output = await utils.ainvoke_die(
+            benchmark="sroie",
+            model=MODEL, 
+            method=DOC_PROMPT_METHOD, 
+            pydantic_object=ModelOutput, 
+            images=img,
+        )
 
-            anls = anls_score(label, output)
-            return anls
-        except Exception as e:
-            return 0.0
-            
+        anls = anls_score(label, output)
+        return anls
+    except Exception as e:
+        print("(ERROR) " + str(e))
+        return 0.0
+        
 
 async def main():
     ds = load_dataset()
@@ -137,7 +109,12 @@ async def main():
         anlss = [x for x in anlss if x is not None]
         tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
 
-
+    utils.log_result(
+        "SROIE",
+        model=MODEL, 
+        method=DOC_PROMPT_METHOD, 
+        anlss=anlss,
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
