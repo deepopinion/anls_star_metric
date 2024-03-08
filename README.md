@@ -67,10 +67,10 @@ The following table shows the ANLS* score for the different models and prompt me
 |                   | SFT (Ours)      | 0.893             | 0.873       | 0.288      | 0.905          | **0.949** |
 | VRDU AD Buy       | Simple          | 0.402             | 0.553       | 0.510      | 0.386          | 0.577     |
 |                   | Latin Prompting | 0.389             | 0.586       | 0.556      | 0.435          | 0.608     |
-|                   | SFT (Ours)      | 0.661             | **0.770**   | 0.685      | 0.594          |
-| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.579          |
-|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.587          |
-|                   | SFT (Ours)      | **0.723**         | 0.711       | 0.720      | 0.639          |
+|                   | SFT (Ours)      | 0.661             | **0.770**   | 0.685      | 0.594          | 0.633     |
+| VRDU Registration | Simple          | 0.659             | 0.676       | 0.699      | 0.579          | 0.685     |
+|                   | Latin Prompting | 0.693             | 0.673       | 0.740      | 0.587          | 0.715     |
+|                   | SFT (Ours)      | **0.723**         | 0.711       | 0.720      | 0.639          | 0.705
 
 
 ### How To Execute
