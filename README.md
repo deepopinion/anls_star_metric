@@ -94,10 +94,10 @@ The following models are benchmarked:
 - `gpt-4-vision-preview`    (Version `gpt-4-1106-vision-preview	`)
 
 The following prompt methods are supported:
-- `simple`
-- `latin`
-- `sft` (DeepOpinion internal only)
-- `vision` If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
+- `simple` - Simple text concatenation after OCR with GooleOCR
+- `latin` - Method as introduced by [Wang et al.](https://arxiv.org/abs/2306.00526)
+- `sft` - DeepOpinion internal only
+- `vision` - If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
 
 5. The final ANLS* is shown on the console. 
 
