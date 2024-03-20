@@ -52,9 +52,9 @@ The following table shows the ANLS* score for the different models and prompt me
 | DocVQA            | Simple          | 0.586             | 0.607       | 0.759        | 0.586      | 0.445          | 0.768     |
 |                   | Latin Prompting | 0.659             | 0.699       | -            | 0.676      | 0.447          | 0.762     |
 |                   | SFT (Ours)      | 0.809             | 0.790       | -            | 0.741      | 0.648          | **0.831** |
-| MPDocVQA          | Simple          | -             | -       | -            | -      | -          | -     |
-|                   | Latin Prompting | -             | -       | -            | -      | -          | -     |
-|                   | SFT (Ours)      | -             | -       | -            | -      | -          | -     |
+| MPDocVQA          | Simple          | 0.517             | 0.635       | 0.708        | 0.603      | 0.364          | 0.636     |
+|                   | Latin Prompting | 0.499             | 0.739       | -            | 0.502      | 0.335          | 0.438     |
+|                   | SFT (Ours)      | 0.734             | **0.781**   | -            | 0.616      | 0.476          | 0.575     |
 |**Document Information Extraction**|
 | Kleister Charity  | Simple          | 0.490             | 0.743       |              | 0.583      | 0.652          | **0.800** |
 |                   | Latin Prompting | 0.442             | 0.735       | -            | 0.478      | 0.576          | 0.787     |
@@ -70,7 +70,7 @@ The following table shows the ANLS* score for the different models and prompt me
 |                   | SFT (Ours)      | 0.661             | **0.770**   | -            | 0.685      | 0.594          | 0.633     |
 | VRDU Registration | Simple          | 0.659             | 0.676       |              | 0.699      | 0.579          | 0.685     |
 |                   | Latin Prompting | 0.693             | 0.673       | -            | 0.740      | 0.587          | 0.715     |
-|                   | SFT (Ours)      | **0.723**         | 0.711       | -            | 0.720      | 0.639          | 0.705
+|                   | SFT (Ours)      | **0.723**         | 0.711       | -            | 0.720      | 0.639          | 0.705     |
 
 
 ### How To Execute
@@ -88,16 +88,18 @@ The following table shows the ANLS* score for the different models and prompt me
 ```
 
 The following models are benchmarked:
-- `gpt-3.5-turbo-16k`
-- `gpt-4-turbo`         (Version `gpt-4-1106-preview`)
-- `gemini-pro`          (Version 1.0)
-- `mistral-large`       (Version 03/2024)
-- `claude-3`            (Version `claude-3-opus-20240229`)
+- `gpt-3.5-turbo-16k`       (Version `gpt-3.5-turbo-16k-0613` )
+- `gpt-4-turbo`             (Version `gpt-4-1106-preview`)
+- `gemini-pro`              (Version 1.0)
+- `mistral-large`           (Version 03/2024)
+- `claude-3`                (Version `claude-3-opus-20240229`)
+- `gpt-4-vision-preview`    (Version `gpt-4-1106-vision-preview	`)
 
 The following prompt methods are supported:
 - `simple`
 - `latin`
 - `sft` (DeepOpinion internal only)
+- `vision` If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
 
 5. The final ANLS* is shown on the console. 
 

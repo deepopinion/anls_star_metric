@@ -78,26 +78,28 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
+semaphore = asyncio.Semaphore(10) 
 async def evaluate_sample(sample):
-    try:
-        file_name = sample[0]
-        label = sample[1]
-        
-        file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
-        images = await asyncio.to_thread(convert_from_path, file_path)
-        output = await utils.ainvoke_die(
-            benchmark="kleister_nda",
-            model=MODEL, 
-            method=DOC_PROMPT_METHOD, 
-            pydantic_object=ModelOutput, 
-            images=images,
-        )
+    async with semaphore:
+        try:
+            file_name = sample[0]
+            label = sample[1]
+            
+            file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
+            images = await asyncio.to_thread(convert_from_path, file_path)
+            output = await utils.ainvoke_die(
+                benchmark="kleister_nda",
+                model=MODEL, 
+                method=DOC_PROMPT_METHOD, 
+                pydantic_object=ModelOutput, 
+                images=images,
+            )
 
-        anls = anls_score(label, output)
-        return anls
-    except Exception as e:
-        print("(ERROR) " + str(e))
-        return 0.0
+            anls = anls_score(label, output)
+            return anls
+        except Exception as e:
+            print("(ERROR) " + str(e))
+            return 0.0
 
 
 #
