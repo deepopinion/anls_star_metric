@@ -288,7 +288,7 @@ async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, image
                 doc_prompt = "\n".join(pages)
             else:
                 doc_prompt = await doc_to_prompt(images, method=method)
-                args["document"] = doc_prompt
+            args["document"] = doc_prompt
                 
         # Inference model    
         output = await chain.ainvoke(args)

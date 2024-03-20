@@ -52,9 +52,9 @@ The following table shows the ANLS* score for the different models and prompt me
 | DocVQA            | Simple          | 0.586             | 0.607       | 0.759        | 0.586      | 0.445          | 0.768     |
 |                   | Latin Prompting | 0.659             | 0.699       | -            | 0.676      | 0.447          | 0.762     |
 |                   | SFT (Ours)      | 0.809             | 0.790       | -            | 0.741      | 0.648          | **0.831** |
-| MPDocVQA          | Simple          | 0.348             | 0.389       |              | 0.389      | 0.249          | 0.507     |
-|                   | Latin Prompting | 0.413             | 0.463       | -            | 0.467      | 0.216          | 0.46      |
-|                   | SFT (Ours)      | 0.547             | 0.548       | -            | 0.548      | 0.377          | **0.559** |
+| MPDocVQA          | Simple          | -             | -       | -            | -      | -          | -     |
+|                   | Latin Prompting | -             | -       | -            | -      | -          | -     |
+|                   | SFT (Ours)      | -             | -       | -            | -      | -          | -     |
 |**Document Information Extraction**|
 | Kleister Charity  | Simple          | 0.490             | 0.743       |              | 0.583      | 0.652          | **0.800** |
 |                   | Latin Prompting | 0.442             | 0.735       | -            | 0.478      | 0.576          | 0.787     |

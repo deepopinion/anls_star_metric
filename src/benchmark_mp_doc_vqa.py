@@ -49,7 +49,7 @@ async def evaluate_sample(sample):
             model=MODEL,
             method=DOC_PROMPT_METHOD,
             question=question,
-            images=img            
+            images=images            
         )
 
         anls = anls_score(answers, answer)
