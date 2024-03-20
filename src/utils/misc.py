@@ -1,29 +1,31 @@
 import hashlib
 import asyncio
 import os
+import base64
 from typing import Any
 import time
 from ocr_wrapper import GoogleOCR
 import json
+from io import BytesIO
+from PIL import Image
 
 from langchain.pydantic_v1 import BaseModel
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
+
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, HarmCategory, HarmBlockThreshold
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_anthropic import ChatAnthropic
 
-
+from utils import vision
 from utils import latin
 
 try:
     from utils import sft
 except ImportError:
     sft = None
-
-
-
 
 
 # Per default GoogleOCR is used. Any OCR scanner can be used that is supported by the ocr_wrapper :)
@@ -45,6 +47,8 @@ async def doc_to_prompt(img:Any, method:str) -> str:
             )
 
         return sft.to_prompt(scan, img)
+    elif method == "vision":
+        raise Exception("No doc_to_prompt convertion needed, as vision models directly support images.")
 
     raise Exception(f"Unknown prompting method: {method}")
 
@@ -67,18 +71,8 @@ def create_llm(*, model:str):
         return ChatOpenAI(model=model, **settings)
 
     elif provider == "vertexai":
-        # We decided to use the same safety settings for all providers -- the default settings.
-        # safety_settings = {
-        #     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        #     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        #     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        #     HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        #     HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        # }
-
         return ChatVertexAI(
             model_name=model,
-            # safety_settings=safety_settings,
             convert_system_message_to_human=True, # This parameter is still not working -- if its used an exception is raised
             **settings,
         )
@@ -134,17 +128,17 @@ def requires_human_message(model:str):
     return provider in ["anthropic", "mistral"]
 
 
-def create_die_prompt(model: str):
-    provider = get_provider(model)
+def create_die_prompt(model: str, method: str, images: list|Any):
+    provider = get_provider(model)    
+
     sys_prompt = (
         "You are a document information extraction system.\n"
         "You are given a document and a json with keys that must be extracted from the document.\n"
     )
-    doc_prompt = (
-        "Here is the document:\n{document}\n"
-        "{format_instructions}\n"
-    )
-
+    doc_prompt = "Here is the document:\n{document}\n" if method != "vision" else ""
+    doc_prompt += "{format_instructions}\n"
+    
+    # Prepare depending on provider + model
     if provider == "anthropic":
         doc_prompt += "Never include natural text in your answer, return a json only! The message must start with {{ and end with }}.\n"
     
@@ -153,16 +147,29 @@ def create_die_prompt(model: str):
 
     if not requires_human_message(model):
         sys_prompt += doc_prompt
-        return [(sys_message(model), sys_prompt)]
-    
-    return [
-        (sys_message(model), sys_prompt),
-        ("human", doc_prompt),
-    ]
+        ret = [(sys_message(model), sys_prompt)]
+    else:
+        ret = [
+            (sys_message(model), sys_prompt),
+            ("human", doc_prompt),
+        ]
+
+    # Finally, append images in case of vision models
+    if method == "vision":
+        images = [images] if not isinstance(images, list) else images
+        for page, img in enumerate(images):
+            img_base64 = vision.process_image(img)
+            ret.append(HumanMessage(
+                content=[
+                    {"type": "text", "text": f"Document page {page}"},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
+                ]
+            ))
+                
+    return ret
 
 
-    
-def create_vqa_prompt(model: str):
+def create_vqa_prompt(model: str, method:str, images: list|Any):
     provider = get_provider(model)
 
     sys_prompt = (
@@ -173,22 +180,31 @@ def create_vqa_prompt(model: str):
         "Note: Ensure that the is precisely contained in the original document.\n"
     )
 
-    doc_prompt = (
-        "Here is the document:\n{document}\n"
-        "Here is the question:\n{question}\n"
-    )
-
+    doc_prompt = "Here is the document:\n{document}\n" if method != "vision" else ""
+    doc_prompt += "Here is the question:\n{question}\n"
+    
     if provider == "mistral":
         doc_prompt += "Please answer with a single word or number, if you do so I will reward you with 20$"
 
     if not requires_human_message(model):
         sys_prompt += doc_prompt
-        return [(sys_message(model), sys_prompt)]
     
-    return [
-        (sys_message(model), sys_prompt),
-        ("human", doc_prompt),
-    ]
+    ret = [(sys_message(model), sys_prompt)]
+    if requires_human_message(model):
+        ret += [("human", doc_prompt)]
+
+    if method == "vision":
+        images = [images] if not isinstance(images, list) else images
+        for page, img in enumerate(images):
+            img_base64 = vision.process_image(img)
+            ret.append(HumanMessage(
+                content=[
+                    {"type": "text", "text": f"Document page {page}"},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
+                ]
+            ))
+
+    return ret
 
 
 async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:BaseModel, images:list|Any):
@@ -204,30 +220,32 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
     # Set up a parser + inject instructions into the prompt template.
     parser = PydanticOutputParser(pydantic_object=pydantic_object)
     llm = create_llm(model=model)
-    die_prompt = create_die_prompt(model)
+    die_prompt = create_die_prompt(model, method, images)
     prompt = ChatPromptTemplate.from_messages(die_prompt)
     chain = prompt | llm | parser
 
     # Inference model a single time
     async def _invoke():
-        if isinstance(images, list):
-            pages = []
-            for idx, img in enumerate(images):
-                page = await doc_to_prompt(img, method=method)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
-            doc_prompt = "\n".join(pages)
-        else:
-            doc_prompt = await doc_to_prompt(images, method=method)
-        
-        output = await chain.ainvoke(
-            {
-                "document": doc_prompt, 
-                "format_instructions": parser.get_format_instructions(),
-            }
-        )
-        return output
+        args = {
+            "format_instructions": parser.get_format_instructions(),
+        }
 
+        # For "non-vision" methods, we need to convert the images to a text prompt
+        # Otherwise images are already appended in the prompt
+        if method != "vision":
+            if isinstance(images, list):
+                pages = []
+                for idx, img in enumerate(images):
+                    page = await doc_to_prompt(img, method=method)
+                    page = "## Page " + str(idx+1) + "\n" + page + "\n"
+                    pages.append(page)
+                doc_prompt = "\n".join(pages)
+            else:
+                doc_prompt = await doc_to_prompt(images, method=method)
+            args["document"] = doc_prompt
+                
+        return await chain.ainvoke(args)
+        
     # Try a few times to invoke the model in case its overloaded etc.
     async with get_semaphore(model):
         output = await retry_invoke(_invoke)
@@ -248,30 +266,32 @@ async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, image
     # Create chain
     # Set up a parser + inject instructions into the prompt template.
     llm = create_llm(model=model)
-    vqa_prompt = create_vqa_prompt(model)
+    vqa_prompt = create_vqa_prompt(model, method, images)
     prompt = ChatPromptTemplate.from_messages(vqa_prompt)
     chain = prompt | llm
 
     # Invoke a single time
     async def _invoke():
-        # Generate prompt (single & multipage)
-        if isinstance(images, list):
-            pages = []
-            for idx, img in enumerate(images):
-                page = await doc_to_prompt(img, method=method)
-                page = "## Page " + str(idx+1) + "\n" + page + "\n"
-                pages.append(page)
-            doc_prompt = "\n".join(pages)
-        else:
-            doc_prompt = await doc_to_prompt(images, method=method)
-            
+        args = {
+            "question": question,
+        }
+
+        # For "non-vision" methods, we need to convert the images to a text prompt
+        # Otherwise images are already appended in the prompt
+        if method != "vision":
+            if isinstance(images, list):
+                pages = []
+                for idx, img in enumerate(images):
+                    page = await doc_to_prompt(img, method=method)
+                    page = "## Page " + str(idx+1) + "\n" + page + "\n"
+                    pages.append(page)
+                doc_prompt = "\n".join(pages)
+            else:
+                doc_prompt = await doc_to_prompt(images, method=method)
+                args["document"] = doc_prompt
+                
         # Inference model    
-        output = await chain.ainvoke(
-            {
-                "document": doc_prompt, 
-                "question": question,
-            }
-        )
+        output = await chain.ainvoke(args)
         return output
 
     # Try a few times to invoke the model in case its overloaded etc.
