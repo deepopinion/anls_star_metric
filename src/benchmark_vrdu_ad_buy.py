@@ -122,28 +122,29 @@ def load_dataset():
         samples.append((item["filename"], kv))
     return samples
 
-
+semaphore = asyncio.Semaphore(10)
 async def evaluate_sample(ds, idx):
-    sample = ds[idx]
-    try:
-        file_name = sample[0]
-        label = sample[1]
+    async with semaphore:
+        sample = ds[idx]
+        try:
+            file_name = sample[0]
+            label = sample[1]
 
-        file_path = os.path.join(GITHUB_REPO_PATH, "pdfs/", file_name)
-        images = await asyncio.to_thread(convert_from_path, file_path)
-        output = await utils.ainvoke_die(
-            benchmark="vrdu_ad_buy",
-            model=MODEL,
-            method=DOC_PROMPT_METHOD,
-            pydantic_object=ModelOutput,
-            images=images,
-        )
+            file_path = os.path.join(GITHUB_REPO_PATH, "pdfs/", file_name)
+            images = await asyncio.to_thread(convert_from_path, file_path)
+            output = await utils.ainvoke_die(
+                benchmark="vrdu_ad_buy",
+                model=MODEL,
+                method=DOC_PROMPT_METHOD,
+                pydantic_object=ModelOutput,
+                images=images,
+            )
 
-        anls = anls_score(label, output)
-        return anls
-    except Exception as e:
-        print("(ERROR) " + str(e))
-        return 0.0
+            anls = anls_score(label, output)
+            return anls
+        except Exception as e:
+            print("(ERROR) " + str(e))
+            return 0.0
 
 
 async def main():

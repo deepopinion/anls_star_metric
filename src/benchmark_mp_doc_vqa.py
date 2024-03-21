@@ -33,30 +33,32 @@ if not os.path.exists(val_json_file):
 #
 # Evaluate a single sample
 #
+semaphore = asyncio.Semaphore(10)
 async def evaluate_sample(sample):
-    try:
-        question = sample["question"]
-        answers = tuple([a for a in sample["answers"]])
-        page_ids = sample["page_ids"]
-        images = []
-        for page_id in page_ids:
-            file_path = os.path.join(DATASET_PATH, "documents", page_id + ".jpg")
-            img = Image.open(file_path)
-            images.append(img)
+    async with semaphore:
+        try:
+            question = sample["question"]
+            answers = tuple([a for a in sample["answers"]])
+            page_ids = sample["page_ids"]
+            images = []
+            for page_id in page_ids:
+                file_path = os.path.join(DATASET_PATH, "documents", page_id + ".jpg")
+                img = Image.open(file_path)
+                images.append(img)
 
-        answer = await utils.ainvoke_vqa(
-            benchmark="mp_doc_vqa",
-            model=MODEL,
-            method=DOC_PROMPT_METHOD,
-            question=question,
-            images=img            
-        )
+            answer = await utils.ainvoke_vqa(
+                benchmark="mp_doc_vqa",
+                model=MODEL,
+                method=DOC_PROMPT_METHOD,
+                question=question,
+                images=images            
+            )
 
-        anls = anls_score(answers, answer)
-        return anls
-    except Exception as e:
-        print("(ERROR) " + str(e))
-        return 0.0
+            anls = anls_score(answers, answer)
+            return anls
+        except Exception as e:
+            print("(ERROR) " + str(e))
+            return 0.0
 
 
 #
