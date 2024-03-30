@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anls_star"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="David Peer", email="david.peer@deepopinion.ai" },
 ]
