@@ -14,3 +14,4 @@ pdf2image
 pydantic
 google-cloud-vision
 hypothesis
+twine

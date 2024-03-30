@@ -18,9 +18,8 @@
     }
 
 ## How to use the ANLS* score?
-1. Copy the file to your project: [anls_star.py](src/anls_star.py)
-2. Execute `pip install munkres` or `pip install -r requirements.txt` (from this repo). 
-3. Call the `anls_score` function with the ground truth and the predictions:
+1. pip install anls_star
+2. Add to your code
 
 ```python
 from anls_star import anls_score

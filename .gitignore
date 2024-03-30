@@ -2,6 +2,7 @@ results.txt
 .ocr_cache
 src/utils/sft.py
 .vscode
+.pypirc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
