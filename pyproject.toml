@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anls_star"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
   { name="David Peer", email="david.peer@deepopinion.ai" },
 ]
@@ -37,7 +37,7 @@ exclude = [
 "src" = "anls_star"
 
 [project.urls]
-GitHub = "https://github.com/deepopinion/anls_star_metric"
+Repository = "https://github.com/deepopinion/anls_star_metric"
 Issues = "https://github.com/deepopinion/anls_star_metric/issues"
 Paper = "https://arxiv.org/abs/2402.03848"
 DeepOpinion = "https://deepopinion.ai"
