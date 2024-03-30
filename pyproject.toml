@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "anls_star"
+version = "0.0.4"
+authors = [
+  { name="David Peer", email="david.peer@deepopinion.ai" },
+]
+description = "A universal metric for Generative Large Language Models (GLLMs)"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "munkres",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/*.py",
+  "/tests",
+]
+exclude = [
+    "src/benchmark*",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = "anls_star"
+
+[project.urls]
+GitHub = "https://github.com/deepopinion/anls_star_metric"
+Issues = "https://github.com/deepopinion/anls_star_metric/issues"
+Paper = "https://arxiv.org/abs/2402.03848"
+DeepOpinion = "https://deepopinion.ai"
