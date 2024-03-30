@@ -18,7 +18,7 @@
     }
 
 ## How to use the ANLS* score?
-1. pip install anls_star
+1. `pip install anls_star`
 2. Add to your code
 
 ```python
