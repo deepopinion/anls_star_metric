@@ -105,3 +105,7 @@ The following prompt methods are supported:
 
 ## How to Execute all Unit Tests
 To run all unit tests simply execute `pytest`
+
+
+## Packaging
+See https://packaging.python.org/en/latest/tutorials/packaging-projects/
