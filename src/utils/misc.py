@@ -68,9 +68,18 @@ def create_llm(*, model:str):
         "temperature": 0.0,
     }
     if provider == "openai":
-        return ChatOpenAI(model=model, **settings)
+        safety_settings={
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
+
+        },
+        return ChatOpenAI(model=model, safety_settings=safety_settings, **settings)
 
     elif provider == "vertexai":
+
         return ChatVertexAI(
             model_name=model,
             convert_system_message_to_human=True, # This parameter is still not working -- if its used an exception is raised
@@ -334,7 +343,7 @@ def get_semaphore(model:str):
     
     provider = get_provider(model)
     if invoke_semaphore is None:
-        p = 5 if provider != "anthropic" else 1
+        p = 5 if provider != "anthropic" and model != "gemini-1.5-pro-preview-0409" else 1
         invoke_semaphore = asyncio.Semaphore(p)
     return invoke_semaphore
 
