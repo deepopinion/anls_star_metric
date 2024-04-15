@@ -195,6 +195,15 @@ class ANLSDict(ANLSTree):
         for k in self.tree.keys() | other.tree.keys():
             self_value = self.tree.get(k, ANLSNone())
             other_value = other.tree.get(k, ANLSNone())
+
+            is_hallucinated_none_key = (
+                k not in self.tree 
+                and k in other.tree 
+                and ANLSNone.check_if_none(other_value.obj)
+            )
+            if is_hallucinated_none_key:
+                continue
+
             nls_list = self_value.nls_list(other_value)
             nlss.extend(nls_list)
         return nlss
@@ -211,7 +220,11 @@ class ANLSNone(ANLSTree):
         return max(len(self), len(other))
 
     def nls_list(self, other):
-        return [1.0 if other.obj in (None, {}, [], "") else 0.0]
+        return [1.0 if self.check_if_none(other.obj) else 0.0]
+
+    @classmethod
+    def check_if_none(cls, value):
+        return isinstance(value, ANLSNone) or value in (None, {}, [], "")
 
 
 class ANLSLeaf(ANLSTree):

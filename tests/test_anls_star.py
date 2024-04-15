@@ -560,3 +560,17 @@ def test_paper_unanswerable_no_answer():
     anls = anls_score(gt, answer)
 
     assert anls == approx(0.0)
+
+
+def test_answer_dict_with_additional_nones_is_ignored():
+    gt = { }
+    answer = {
+        "string": "", 
+        "dict": {}, 
+        "list": [], 
+        "none": None, 
+        "bool": False,
+    }
+
+    anls = anls_score(gt, answer)
+    assert anls == approx(0.0)
