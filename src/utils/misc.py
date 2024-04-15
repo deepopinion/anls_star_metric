@@ -1,3 +1,4 @@
+from copy import deepcopy
 import hashlib
 import asyncio
 import os
@@ -68,20 +69,18 @@ def create_llm(*, model:str):
         "temperature": 0.0,
     }
     if provider == "openai":
-        safety_settings={
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_NONE,
-
-        },
-        return ChatOpenAI(model=model, safety_settings=safety_settings, **settings)
+        return ChatOpenAI(model=model, **settings)
 
     elif provider == "vertexai":
-
         return ChatVertexAI(
             model_name=model,
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            },
             convert_system_message_to_human=True, # This parameter is still not working -- if its used an exception is raised
             **settings,
         )
@@ -137,7 +136,7 @@ def requires_human_message(model:str):
     return provider in ["anthropic", "mistral"]
 
 
-def create_die_prompt(model: str, method: str, images: list|Any):
+def create_die_prompt(benchmark: str, model: str, method: str, images: list|Any):
     provider = get_provider(model)    
 
     sys_prompt = (
@@ -154,6 +153,9 @@ def create_die_prompt(model: str, method: str, images: list|Any):
     if provider == "mistral":
         doc_prompt += "Json comments are not allowed! Also always complete the full task never delegate work to the user. If you fullfill the job I will reward you with 20$\n"
 
+    if provider == "vertexai" and benchmark == "sroie":
+        doc_prompt += "\nNote: Don't include the adress key."
+
     if not requires_human_message(model):
         sys_prompt += doc_prompt
         ret = [(sys_message(model), sys_prompt)]
@@ -165,18 +167,20 @@ def create_die_prompt(model: str, method: str, images: list|Any):
 
     # Finally, append images in case of vision models
     if method == "vision":
-        images = [images] if not isinstance(images, list) else images
-        for page, img in enumerate(images):
-            img_base64 = vision.process_image(img)
-            ret.append(HumanMessage(
-                content=[
-                    {"type": "text", "text": f"Document page {page}"},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
-                ]
-            ))
+        if(provider == "openai"):
+            ret = _extend_openai_vision_prompt(images, ret)
+        elif(provider == "vertexai"):
+            ret[0] = (sys_message(model),
+                "Extract information from the given image.\n"
+                "Return one single json object containing only the keys asked for!\n"
+                "{format_instructions}\n"
+            )
+            ret = _extend_vertexai_vision_prompt(images, ret)
+        else:
+            raise Exception(f"Unknown vision provider: {provider}")
                 
     return ret
-
+       
 
 def create_vqa_prompt(model: str, method:str, images: list|Any):
     provider = get_provider(model)
@@ -202,18 +206,52 @@ def create_vqa_prompt(model: str, method:str, images: list|Any):
     if requires_human_message(model):
         ret += [("human", doc_prompt)]
 
+     # Finally, append images in case of vision models
     if method == "vision":
-        images = [images] if not isinstance(images, list) else images
-        for page, img in enumerate(images):
-            img_base64 = vision.process_image(img)
-            ret.append(HumanMessage(
+        if(provider == "openai"):
+            ret = _extend_openai_vision_prompt(images, ret)
+        elif(provider == "vertexai"):
+            ret = _extend_vertexai_vision_prompt(images, ret)
+        else:
+            raise Exception(f"Unknown vision provider: {provider}")
+
+    return ret
+
+
+def _extend_openai_vision_prompt(images, messages):
+    ret = deepcopy(messages)
+    images = [images] if not isinstance(images, list) else images
+    for page, img in enumerate(images):
+        img_base64 = vision.process_image(img)
+
+        ret.append(HumanMessage(
                 content=[
                     {"type": "text", "text": f"Document page {page}"},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
                 ]
             ))
-
     return ret
+
+
+def _extend_vertexai_vision_prompt(images, messages):
+    sys_prompt = messages[0][1]
+    content = []
+    
+    # Gemini requires alternating messages between the human and the system
+    # We, therefore, need to append the images to the system message
+    images = [images] if not isinstance(images, list) else images
+    for img in images:
+        img_base64 = vision.process_image(img)
+        content.append(
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
+        )
+
+    # We found that gemini works better if we append system message after the image
+    content.append({"type": "text", "text": sys_prompt})
+
+    return [
+        HumanMessage(content=content)
+    ]
 
 
 async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:BaseModel, images:list|Any):
@@ -226,10 +264,9 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
         return obj
 
     # Create chain
-    # Set up a parser + inject instructions into the prompt template.
     parser = PydanticOutputParser(pydantic_object=pydantic_object)
     llm = create_llm(model=model)
-    die_prompt = create_die_prompt(model, method, images)
+    die_prompt = create_die_prompt(benchmark, model, method, images)
     prompt = ChatPromptTemplate.from_messages(die_prompt)
     chain = prompt | llm | parser
 
