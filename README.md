@@ -43,8 +43,8 @@ The following types (and all combinations of it) are supported:
 
 The following table shows the ANLS* score for the different models and prompt methods on different datasets. Note that we evaluate the models and prompt methods on 100 samples for single page datasets and 20 samples for multi page datasets in order to reduce the execution time and costs. Note that the provided validation set is used for the report.
 
-
-<img src="assets/table.png" alt="table" width="1000"/>
+<!-- Note that we link here to the github repo -- then values in pypi are automatically updated without the need to release a new package -->
+<img src="https://raw.githubusercontent.com/deepopinion/anls_star_metric/main/assets/table.png" alt="table" width="1000"/>
 
 
 ### How To Execute
