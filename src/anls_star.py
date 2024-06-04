@@ -8,6 +8,7 @@ DeepOpinion, 2024
 """
 
 import abc
+import math
 import warnings
 from typing import Any, Literal, Union, overload
 
@@ -138,7 +139,11 @@ class ANLSList(ANLSTree):
                 nls_list, chosen_gt = gt.nls_list(pred)
                 length = gt.pairwise_len(pred)
                 row.append(nls_list)
-                avg_row.append((sum(nls_list) / length) if length > 0 else 1.0)
+                avg = (sum(nls_list) / length) if length > 0 else 1.0
+                if pred.obj == chosen_gt:
+                    # Slightly favor exact matches to break ties in the Hungarian algorithm
+                    avg = math.nextafter(avg, float("inf"))
+                avg_row.append(avg)
                 gts_row.append(chosen_gt)
             mat.append(row)
             avg_mat.append(avg_row)
