@@ -3,7 +3,7 @@
 pytest
 numpy
 hypothesis
-git+https://github.com/deepopinion/ocr_wrapper
+git+https://github.com/deepopinion/ocr_wrapper@deprecated/1.x
 tqdm
 langchain
 langchain-openai
