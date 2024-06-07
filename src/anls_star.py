@@ -327,7 +327,7 @@ def anls_score(
 ) -> Union[float, tuple[float, Any]]: ...
 
 
-def anls_score(gt, pred):
+def anls_score(gt, pred, return_gt: bool = False):
     """Run ANLS on a ground truth and prediction object. The returned score is a value between 0 and 1, where 1 is the best possible score. For further information on the ANLS metric and the types see https://arxiv.org/abs/2402.03848
 
     Types of gt and pred:
