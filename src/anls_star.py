@@ -342,9 +342,19 @@ def anls_score(gt, pred, return_gt: bool = False):
     Args:
         gt: The ground truth object. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
         pred: The prediction object - usually the output of the model. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
+        return_gt: If `True`, the function also returns the object that best matches the prediction, and can be derived from the ground truth (i.e. selecting options from tuples, reordering lists, etc.). This is useful for debugging and error analysis.
+
 
     Returns:
-        The ANLS score [0-1]
+        - The ANLS score [0-1] if `return_gt` is `False`.
+        - A tuple with the ANLS score [0-1] and the closest ground truth object if `return_gt` is `True`.
+
+    Examples:
+        >>> gt = {'a': ('hello', 'world'), 'b': ['this', 'is', 'a', 'test']}
+        >>> pred = {'a': 'hello!', 'b': ['a', 'test', 'this', 'be']}
+        >>> score, closest_gt = anls_score(gt, pred, return_gt=True)
+        # score = 0.766...
+        # closest_gt = {'a': 'hello', 'b': ['a', 'test', 'this', 'is']}
     """
 
     # Convert gt list to tuple in order to be compatible with classical QA datasets
