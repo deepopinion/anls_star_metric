@@ -278,13 +278,13 @@ class ANLSLeaf(ANLSTree):
 
 
 def anls_score(gt, pred):
-    """Run ANLS on a ground truth and prediction object. The returned score is a value between 0 and 1, where 1 is the best possible score. For further information on the ANLS metric and the types see https://arxiv.org/
+    """Run ANLS on a ground truth and prediction object. The returned score is a value between 0 and 1, where 1 is the best possible score. For further information on the ANLS metric and the types see https://arxiv.org/abs/2402.03848
 
     Types of gt and pred:
         - `String`: To compare strings against each other using the normalized Levenshtein similarity.
         - `None`: Sometimes questions are not answerable. With this type it can be checked, whether the model does not answer. Any answer other than None will be penalized.
-        - `Tuple`: To compare a list of possible answers against each other. This is useful for tasks where multiple answers are possible. The closest match is used to compute the score. This is also provided by the classical ANLS score \citep{anls}.
-        - `List`: Sometimes it is required to information in the form of lists from a document. For example, extracting all purchased items found in an invoice. While the order is not important, the list should contain all items. Note that the same item can occur multiple times in lists. Hungarian matching \citep{hungarian_matching} is used to compare the ground truth and the predicted list against each other. Both missing elements as well as hallucinated elements are penalized as introduced by \citep{anlsl}.
+        - `Tuple`: To compare a list of possible answers against each other. This is useful for tasks where multiple answers are possible. The closest match is used to compute the score. This is also provided by the classical ANLS score.
+        - `List`: Sometimes it is required to information in the form of lists from a document. For example, extracting all purchased items found in an invoice. While the order is not important, the list should contain all items. Note that the same item can occur multiple times in lists. Hungarian matching is used to compare the ground truth and the predicted list against each other. Both missing elements as well as hallucinated elements are penalized.
         - `Dict`: For document information extraction it is usually required to extract key-value pairs. For example, when extracting the date and total value from an invoice. Missing keys as well as hallucinated keys are penalized.
 
     Note: The edge case of a ground truth being a list of strings and the prediction being a string is supported for compatibility with VQA-like datasets. In this case the list is converted implicitly to a tuple.
