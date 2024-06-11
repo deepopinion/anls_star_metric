@@ -29,6 +29,26 @@ print(anls)
 
 4. Thats it!
 
+### Returning the closest match
+The `anls_score` function can also be used to return the object which best matches the prediction and can be derived from the ground truth by re-ordering lists, selecting options from tuples etc. by setting the `return_gt` argument to `True` (default is `False`).
+
+As an example:
+```python
+gt = {'a': ('hello', 'world'), 'b': ['this', 'is', 'a', 'test']}
+pred = {'a': 'hello!', 'b': ['a', 'test', 'this', 'be']}
+score, closest_gt = anls_score(gt, pred, return_gt=True)
+# score = 0.766...
+# closest_gt = {'a': 'hello', 'b': ['a', 'test', 'this', 'is']}
+```
+
+This result can then be used e.g. with the [deepdiff](https://pypi.org/project/deepdiff/) package for further analysis:
+```python
+from deepdiff import DeepDiff
+diff = DeepDiff(closest_gt, pred)
+# diff = {'values_changed': {"root['a']": {'new_value': 'hello!', 'old_value': 'hello'},
+#                            "root['b'][3]": {'new_value': 'be', 'old_value': 'is'}}}
+```
+
 ## Supported Types
 Simply copy this file to your project and import the `anls_score` function from it. Then call the function with the ground truth and the predictions. 
 

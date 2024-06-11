@@ -1,3 +1,4 @@
+import itertools
 import random
 import sys
 
@@ -25,21 +26,25 @@ def has_tuple(obj):
 ### Scalars ###
 @given(st.none() | st.booleans() | st.text() | st.floats() | st.integers())
 def test_anls_same_value(s):
-    assert anls_score(s, s) == approx(1.0)
+    assert anls_score(s, s, return_gt=True) == (approx(1.0), s)
 
 
 @given(st.booleans() | st.text() | st.floats() | st.integers())
 def test_anls_cast_to_str(s):
-    assert anls_score(s, str(s)) == approx(1.0)
-    assert anls_score(str(s), s) == approx(1.0)
+    assert anls_score(s, str(s), return_gt=True) == (approx(1.0), s)
+    assert anls_score(str(s), s, return_gt=True) == (approx(1.0), str(s))
 
 
 def test_anls_score_should_trim_whitespace():
-    assert anls_score("Test Hello ", " Test    Hello\n\n") == approx(1.0)
+    anls, closest_gt = anls_score("Test Hello ", " Test    Hello\n\n", return_gt=True)
+    assert anls == approx(1.0)
+    assert closest_gt == "Test Hello "
 
 
 def test_anls_score_case_insensitive():
-    assert anls_score("TeSt HeLlO", "tEsT hElLO") == approx(1.0)
+    anls, closest_gt = anls_score("TeSt HeLlO", "tEsT hElLO", return_gt=True)
+    assert anls == approx(1.0)
+    assert closest_gt == "TeSt HeLlO"
 
 
 ### Multiple GTs (tuple) ###
@@ -47,52 +52,59 @@ def test_anls_score_case_insensitive():
 def test_anls_score_single_answer(s):
     gts = (s,)
     pred = s
-    anls = anls_score(gts, pred)
+    anls, closest_gt = anls_score(gts, pred, return_gt=True)
 
     assert anls == approx(1.0)
+    # Equal unless both are NaN (NaN != NaN)
+    assert closest_gt == s or (closest_gt != closest_gt and s != s)
 
 
 @given(st.text().filter(lambda x: x != "Hi there"))
 def test_anls_score_single_wrong_answer(s):
     gts = (s,)
     answer = "Hi there"
-    anls = anls_score(gts, answer)
+    anls, closest_gt = anls_score(gts, answer, return_gt=True)
 
     assert anls == approx(0.0)
+    assert closest_gt == s
 
 
 def test_anls_score_single_answer_slightly_off():
     answers = ("500",)
     answer = "$500"
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls < 1.0
     assert anls > 0.3
+    assert closest_gt == "500"
 
 
 def test_anls_score_float_str():
     answers = ("0.123",)
     answer = 0.123
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == "0.123"
 
 
 @given(st.tuples(st.text()), st.text())
 def test_anls_score_single_answer_multiple_possibilities_should_succed(others, correct):
     gts = others + (correct,)
     pred = correct
-    anls = anls_score(gts, pred)
+    anls, closest_gt = anls_score(gts, pred, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == correct
 
 
 def test_anls_tuple_with_empty_list():
     gt = {"a": ([], ["a", "b", "c"], ["d", "e", "f"])}
     pred = {"a": []}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == {"a": []}
 
 
 def test_anls_tuple_with_empty_list_2():
@@ -100,9 +112,10 @@ def test_anls_tuple_with_empty_list_2():
     # This changes the result of the max() call if all options have the same ANLS sum (0.0)
     gt = {"a": (["a", "b", "c"], ["d", "e", "f"], [])}
     pred = {"a": []}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == {"a": []}
 
 
 def test_anls_empty_tuple_should_fail():
@@ -114,7 +127,7 @@ def test_anls_empty_tuple_should_fail():
 
 ### Lists ###
 def test_anls_score_empty_list():
-    assert anls_score([], []) == approx(1.0)
+    assert anls_score([], [], return_gt=True) == (approx(1.0), [])
 
 
 @given(st.lists(st.text(), max_size=10))
@@ -122,20 +135,28 @@ def test_anls_score_permuted_list(lst: list):
     gt = lst.copy()
     pred = lst.copy()
     random.shuffle(pred)
-    assert anls_score(gt, pred) == approx(1.0)
+    assert anls_score(gt, pred, return_gt=True) == (approx(1.0), pred)
 
 
 @given(st.lists(st.text(), min_size=10, max_size=10))
-def test_anls_score_list_results_one_missing(lst: list):
-    assert anls_score(lst, lst[:-1]) == approx(0.9)
+def test_anls_score_list_results_one_missing_at_end(lst: list):
+    assert anls_score(lst, lst[:-1], return_gt=True) == (approx(0.9), lst)
+
+
+@given(st.lists(st.text(), min_size=10, max_size=10))
+def test_anls_score_list_results_one_missing_at_beginning(lst: list):
+    """If an element is missing at the beginning, we expect it to appear at
+    the end in the best-matching gt since non-matched items are moved back."""
+    assert anls_score(lst, lst[1:], return_gt=True) == (approx(0.9), lst[1:] + lst[:1])
 
 
 def test_anls_score_list_results_completely_off():
     answers = ["a", "b", "c"]
     answer = ["what", "is", "deepopinion"]
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(0.0)
+    assert closest_gt == ["a", "b", "c"]
 
 
 def test_anls_missed_list_elements_should_lower_score():
@@ -143,7 +164,12 @@ def test_anls_missed_list_elements_should_lower_score():
     pred1 = ["one", "to", "three"]
     pred2 = ["one", "to"]
 
-    assert 1.0 > anls_score(gt, pred1) > anls_score(gt, pred2) > 0.0
+    anls1, closest_gt_1 = anls_score(gt, pred1, return_gt=True)
+    anls2, closest_gt_2 = anls_score(gt, pred2, return_gt=True)
+
+    assert 1.0 > anls1 > anls2 > 0.0
+    assert closest_gt_1 == ["one", "two", "three"]
+    assert closest_gt_2 == ["one", "two", "three"]
 
 
 def test_anls_hallucinated_list_elements_should_lower_score():
@@ -151,13 +177,28 @@ def test_anls_hallucinated_list_elements_should_lower_score():
     pred1 = ["one", "to", "three"]
     pred2 = ["one", "to", "three", "four"]
 
-    assert 1.0 > anls_score(gt, pred1) > anls_score(gt, pred2) > 0.0
+    anls1, closest_gt_1 = anls_score(gt, pred1, return_gt=True)
+    anls2, closest_gt_2 = anls_score(gt, pred2, return_gt=True)
+
+    assert 1.0 > anls1 > anls2 > 0.0
+    assert closest_gt_1 == gt
+    assert closest_gt_2 == gt
+
+
+def test_anls_list_permutation_invariant():
+    gt = ["one", "two", "three"]
+    pred = ["three", "one", "two"]
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
+
+    assert anls == approx(1.0)
+    assert closest_gt == pred
 
 
 ### None's ###
 @given(st.sampled_from([None, [], {}, ""]))
 def test_anls_score_falsy_values_should_match_none(pred):
-    assert anls_score(None, pred) == approx(1.0)
+    """If the pred is "None-y", it should match and be returned as the best match."""
+    assert anls_score(None, pred, return_gt=True) == (approx(1.0), pred)
 
 
 @given(
@@ -169,12 +210,13 @@ def test_anls_score_falsy_values_should_match_none(pred):
     | st.dictionaries(st.text(), st.text(), min_size=1)
 )
 def test_anls_score_none_expected_but_not_predicted(pred):
-    assert anls_score(None, pred) == approx(0.0)
+    """If the pred is not "None-y", it should not match and None is the best match."""
+    assert anls_score(None, pred, return_gt=True) == (approx(0.0), None)
 
 
 ### Dicts ###
 def test_anls_score_empty_dict():
-    assert anls_score(dict(), dict()) == approx(1.0)
+    assert anls_score(dict(), dict(), return_gt=True) == (approx(1.0), dict())
 
 
 @given(
@@ -184,9 +226,11 @@ def test_anls_score_empty_dict():
     )
 )
 def test_anls_score_two_equal_dicts(d: dict):
-    anls = anls_score(d, d)
+    anls, closest_gt = anls_score(d, d, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == d
+    assert list(closest_gt.keys()) == list(d.keys())  # same order
 
 
 @given(
@@ -196,10 +240,17 @@ def test_anls_score_two_dicts_hallucinated_key(d: dict):
     gt = d.copy()
     pred = d.copy()
     gt.pop(list(gt.keys())[0])  # remove a random key from gt
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls < 1.0
     assert anls == approx(len(gt) / len(pred))
+    for k, kg in itertools.zip_longest(gt, closest_gt):
+        if k is not None and kg is not None:
+            assert k == kg
+            assert gt[k] == closest_gt[kg]
+        else:
+            # If we have a missing key, the value should be None-y (which is equivalent to missing in ANLS*)
+            assert closest_gt[kg] in (None, [], {}, "")
 
 
 @given(
@@ -209,18 +260,21 @@ def test_anls_score_two_dicts_missing_key(d: dict):
     gt = d.copy()
     pred = d.copy()
     pred.pop(list(pred.keys())[0])  # remove a random key from pred
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls < 1.0
     assert anls == approx(len(pred) / len(gt))
+    assert closest_gt == gt
+    assert list(closest_gt.keys()) == list(gt.keys())
 
 
 def test_anls_score_two_dicts_one_none():
     answers = {"a": "b"}
     answer = None
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls < 1.0
+    assert closest_gt == answers
 
 
 @given(
@@ -231,7 +285,7 @@ def test_anls_score_two_dicts_one_none():
     ),
 )
 def test_anls_score_recursive_dicts(d: dict):
-    assert anls_score(d, d) == approx(1.0)
+    assert anls_score(d, d, return_gt=True) == (approx(1.0), d)
 
 
 def test_anls_score_recursive_dicts_and_multiple_options():
@@ -239,39 +293,46 @@ def test_anls_score_recursive_dicts_and_multiple_options():
     answer1 = {"a": {"b": "e"}}
     answer2 = {"a": {"b": "c"}}
 
-    anls1 = anls_score(answers, answer1)
-    anls2 = anls_score(answers, answer2)
+    anls1, closest_gt1 = anls_score(answers, answer1, return_gt=True)
+    anls2, closest_gt2 = anls_score(answers, answer2, return_gt=True)
 
     assert anls1 == anls2 == approx(1.0)
+    assert closest_gt1 == answer1
+    assert closest_gt2 == answer2
 
 
 def test_anls_score_two_dicts_expected_multiple_options():
     answers = {"a": ("b", "t"), "c": "d"}
     answer = {"a": "t", "c": "d"}
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == answer
+    assert list(closest_gt.keys()) == list(answer.keys())
 
 
 @given(st.dictionaries(st.text(), st.lists(st.text())))
 def test_anls_score_two_dicts_with_lists(d: dict):
-    assert anls_score(d, d) == approx(1.0)
+    assert anls_score(d, d, return_gt=True) == (approx(1.0), d)
 
 
 def test_anls_score_two_different_dict_values():
     answers = {"a": "b", "c": "d"}
     answer = {"a": "b", "c": "e"}
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(0.5)
+    assert closest_gt == {"a": "b", "c": "d"}
 
 
 def test_anls_score_two_different_dict_keys():
     answers = {"a": "b", "c": "d"}
     answer = {"a": "b", "e": "d"}
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(1.0 / 3.0)
+    assert closest_gt == {"a": "b", "c": "d", "e": None}
+    assert list(closest_gt.keys()) == ["a", "c", "e"]
 
 
 @given(st.lists(st.dictionaries(st.text(), st.text())))
@@ -280,42 +341,53 @@ def test_anls_score_list_of_dict(lst: list):
     gt = lst.copy()
     pred = lst.copy()
     random.shuffle(pred)
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == pred
+    for g, p in zip(closest_gt, pred):
+        assert list(g.keys()) == list(p.keys())
 
 
 def test_anls_score_line_items():
     """Complex structure with line items."""
     gt = {"k1": 1, "k2": "mock", "line_items": [{"a": "b", "c": "d"}, {"e": "f"}]}
     pred = {"k1": 1, "k2": "kcom", "line_items": [{"e": "f"}, {"a": "y", "c": "d"}]}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(3 / 5)  # fair average regardless of depth
+    assert closest_gt == {
+        "k1": 1,
+        "k2": "mock",
+        "line_items": [{"e": "f"}, {"a": "b", "c": "d"}],
+    }
 
 
 def test_anls_dict_list():
     gt = {"a": ["a", "b", "c"]}
     pred = {"a": ["b", "c"]}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(2 / 3)  # fair average regardless of depth
+    assert closest_gt == {"a": ["b", "c", "a"]}  # correct preds first in list
 
 
 def test_anls_dict_list_but_returns_scalar():
     gt = {"a": ["a", "b", "c"]}
     pred = {"a": "b"}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(0.0)
+    assert closest_gt == gt
 
 
 def test_anls_dict_list_different_options():
     gt = {"a": ("David Peer", "Peer David")}
     pred = {"a": "David Peer"}
-    anls = anls_score(gt, pred)
+    anls, closest_gt = anls_score(gt, pred, return_gt=True)
 
     assert anls == approx(1)
+    assert closest_gt == {"a": "David Peer"}
 
 
 def test_anls_more_hallucinated_keys_should_lower_score():
@@ -323,7 +395,16 @@ def test_anls_more_hallucinated_keys_should_lower_score():
     pred1 = {"a": "b", "c": "d"}
     pred2 = {"a": "b", "c": "d", "e": "f", "g": "h"}
 
-    assert 1.0 > anls_score(gt, pred1) > anls_score(gt, pred2) > 0.0
+    anls1, closest_gt_1 = anls_score(gt, pred1, return_gt=True)
+    anls2, closest_gt_2 = anls_score(gt, pred2, return_gt=True)
+
+    assert 1.0 > anls1 > anls2 > 0.0
+    # Hallucinated keys are added as None-valued keys to the closest_gt
+    # (minimal diff to the pred)
+    assert closest_gt_1 == {"a": "b", "c": None}
+    assert closest_gt_2 == {"a": "b", "c": None, "e": None, "g": None}
+    assert list(closest_gt_1.keys()) == ["a", "c"]
+    assert list(closest_gt_2.keys()) == ["a", "c", "e", "g"]
 
 
 def test_anls_more_missed_keys_should_lower_score():
@@ -331,7 +412,14 @@ def test_anls_more_missed_keys_should_lower_score():
     pred1 = {"a": "b", "c": "d"}
     pred2 = {"a": "b"}
 
-    assert 1.0 > anls_score(gt, pred1) > anls_score(gt, pred2) > 0.0
+    anls1, closest_gt_1 = anls_score(gt, pred1, return_gt=True)
+    anls2, closest_gt_2 = anls_score(gt, pred2, return_gt=True)
+
+    assert 1.0 > anls1 > anls2 > 0.0
+    assert closest_gt_1 == gt
+    assert closest_gt_2 == gt
+    assert list(closest_gt_1.keys()) == list(gt.keys())
+    assert list(closest_gt_2.keys()) == list(gt.keys())
 
 
 ### No tuples in preds ###
@@ -358,7 +446,7 @@ def test_anls_tuple_in_pred_should_fail(obj):
     )
 )
 def test_arbitrary_equal_objects(obj):
-    assert anls_score(obj, obj) == approx(1.0)
+    assert anls_score(obj, obj, return_gt=True) == (approx(1.0), obj)
 
 
 ### ST-VQA backward compatibility ###
@@ -370,7 +458,7 @@ def test_anls_score_classical_qa_dataset_should_log(gt: list, pred: str):
     gt = gt + [pred]
     random.shuffle(gt)
     with pytest.warns(UserWarning, match="compatibility mode"):
-        assert anls_score(gt, pred) == approx(1.0)
+        assert anls_score(gt, pred, return_gt=True) == (approx(1.0), pred)
 
 
 def test_classical_qa_dataset():
@@ -380,9 +468,10 @@ def test_classical_qa_dataset():
         "st. louis children hospital",
     ]
     answer = "St. Louis Children's Hospital"
-    anls = anls_score(answers, answer)
+    anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == "st. louis children's hospital"
 
 
 def test_empty_response_penalizes_FNs_only():
@@ -396,9 +485,11 @@ def test_empty_response_penalizes_FNs_only():
         "effective_date": None,
         "term": None,
     }
-    anls = anls_score(gt, answer)
+    anls, closest_gt = anls_score(gt, answer, return_gt=True)
 
     assert anls == approx(0.5)
+    assert closest_gt == gt
+    assert list(closest_gt.keys()) == list(gt.keys())
 
 
 def test_missing_key_is_interpreted_as_none():
@@ -409,9 +500,12 @@ def test_missing_key_is_interpreted_as_none():
         "name": "david",
         "company": None,
     }
-    anls = anls_score(gt, answer)
+    anls, closest_gt = anls_score(gt, answer, return_gt=True)
 
     assert anls == approx(1.0)
+    assert closest_gt == gt
+    assert list(closest_gt.keys()) == list(gt.keys())
+
 
 #
 # Cases from paper
@@ -563,12 +657,12 @@ def test_paper_unanswerable_no_answer():
 
 
 def test_answer_dict_with_additional_nones_is_ignored():
-    gt = { }
+    gt = {}
     answer = {
-        "string": "", 
-        "dict": {}, 
-        "list": [], 
-        "none": None, 
+        "string": "",
+        "dict": {},
+        "list": [],
+        "none": None,
         "bool": False,
     }
 
