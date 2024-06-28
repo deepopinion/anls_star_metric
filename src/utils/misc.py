@@ -64,6 +64,8 @@ def create_llm(*, model:str):
         model = "gpt-4-1106-preview"
     elif model == "claude-3":
         model = "claude-3-opus-20240229"
+    elif model == "claude-35":
+        model = "claude-3-5-sonnet-20240620"
 
     settings = {
         "temperature": 0.0,
