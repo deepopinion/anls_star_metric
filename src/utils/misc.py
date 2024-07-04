@@ -41,14 +41,14 @@ async def doc_to_prompt(img:Any, method:str) -> str:
         return " ".join([x["text"] for x in scan])
     elif method == "latin":
         return latin.to_prompt(scan, img.size)
-    elif method == "sft":
+    elif method in ["sft", "vision"]:
         if sft is None:
             raise Exception(
                 "Please install the sft package from DeepOpinion in order to use the sft prompting method."
             )
 
         return sft.to_prompt(scan, img)
-    elif method == "vision":
+    elif method == "vision_only":
         raise Exception("No doc_to_prompt convertion needed, as vision models directly support images.")
 
     raise Exception(f"Unknown prompting method: {method}")
@@ -145,7 +145,7 @@ def create_die_prompt(benchmark: str, model: str, method: str, images: list|Any)
         "You are a document information extraction system.\n"
         "You are given a document and a json with keys that must be extracted from the document.\n"
     )
-    doc_prompt = "Here is the document:\n{document}\n" if method != "vision" else ""
+    doc_prompt = "Here is the document:\n{document}\n" if method != "vision_only" else ""
     doc_prompt += "{format_instructions}\n"
     
     # Prepare depending on provider + model
@@ -168,7 +168,7 @@ def create_die_prompt(benchmark: str, model: str, method: str, images: list|Any)
         ]
 
     # Finally, append images in case of vision models
-    if method == "vision":
+    if method in ["vision", "vision_only"]:
         if(provider == "openai"):
             ret = _extend_openai_vision_prompt(images, ret)
         elif(provider == "vertexai"):
@@ -195,7 +195,7 @@ def create_vqa_prompt(model: str, method:str, images: list|Any):
         "Note: Ensure that the is precisely contained in the original document.\n"
     )
 
-    doc_prompt = "Here is the document:\n{document}\n" if method != "vision" else ""
+    doc_prompt = "Here is the document:\n{document}\n" if method != "vision_only" else ""
     doc_prompt += "Here is the question:\n{question}\n"
     
     if provider == "mistral":
@@ -209,7 +209,7 @@ def create_vqa_prompt(model: str, method:str, images: list|Any):
         ret += [("human", doc_prompt)]
 
      # Finally, append images in case of vision models
-    if method == "vision":
+    if method in ["vision", "vision_only"]:
         if(provider == "openai"):
             ret = _extend_openai_vision_prompt(images, ret)
         elif(provider == "vertexai"):
@@ -280,7 +280,7 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
 
         # For "non-vision" methods, we need to convert the images to a text prompt
         # Otherwise images are already appended in the prompt
-        if method != "vision":
+        if method != "vision_only":
             if isinstance(images, list):
                 pages = []
                 for idx, img in enumerate(images):
@@ -291,7 +291,7 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
             else:
                 doc_prompt = await doc_to_prompt(images, method=method)
             args["document"] = doc_prompt
-                
+                    
         return await chain.ainvoke(args)
         
     # Try a few times to invoke the model in case its overloaded etc.
@@ -326,7 +326,7 @@ async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, image
 
         # For "non-vision" methods, we need to convert the images to a text prompt
         # Otherwise images are already appended in the prompt
-        if method != "vision":
+        if method != "vision_only":
             if isinstance(images, list):
                 pages = []
                 for idx, img in enumerate(images):
