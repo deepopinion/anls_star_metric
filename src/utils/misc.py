@@ -236,7 +236,6 @@ def _extend_openai_vision_prompt(images, messages):
 
 
 def _extend_vertexai_vision_prompt(images, messages):
-    sys_prompt = messages[0][1]
     content = []
     
     # Gemini requires alternating messages between the human and the system
@@ -248,12 +247,10 @@ def _extend_vertexai_vision_prompt(images, messages):
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
         )
 
-    # We found that gemini works better if we append system message after the image
-    content.append({"type": "text", "text": sys_prompt})
-
     return [
-        HumanMessage(content=content)
-    ]
+        HumanMessage(content=content),
+        ("assistant", "Thanks for the images. What should I do with those?"),
+    ] + messages
 
 
 async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:BaseModel, images:list|Any):
