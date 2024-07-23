@@ -614,6 +614,11 @@ def test_paper_complex_object():
 
     assert anls == approx(0.8)
 
+def test_paper_complex_hierarchy():
+    gt = {"a": "Hello", "b": [{"l1": "a", "l2": "b"}, {"l1": "c", "l2": "d"}]}
+    answer = {"a": "Hello", "b": [{"l1": "a", "l2": "q"}, {"l1": "c", "l2": "d"}]}
+    anls = anls_score(gt, answer)
+
 
 def test_paper_edge_list_implicitly_casted():
     gt = list(["Hello", "World"])
