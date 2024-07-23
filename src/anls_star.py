@@ -46,11 +46,10 @@ class ANLSTree(abc.ABC):
                 f"Found unsupported type {type(obj)} for {obj} while creating ANLS tree"
             )
 
-    def anls(self, other: "ANLSTree") -> tuple[float, "ANLSTree"]:
-        breakpoint()
-        nls_list, closest_gt = self.nls_list(other, ())
+    def anls(self, other: "ANLSTree") -> tuple[float, "ANLSTree", list[dict[tuple[str, ...], float]]]:
+        nls_list, closest_gt, key_scores = self.nls_list(other, (), [])
         length = self.pairwise_len(other)
-        return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt
+        return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt, key_scores
 
     def __str__(self) -> str:
         return f"ANLSTree({repr(self.obj)})"
@@ -174,7 +173,9 @@ class ANLSList(ANLSTree):
             ks_row = []
             for pred in other.tree:
                 key_scores_copy = key_scores.copy()
-                nls_list, chosen_gt, new_key_scores = gt.nls_list(pred, key_hierarchy, key_scores_copy)
+                nls_list, chosen_gt, new_key_scores = gt.nls_list(
+                    pred, key_hierarchy, key_scores_copy
+                )
                 length = gt.pairwise_len(pred)
                 row.append(nls_list)
                 avg = (sum(nls_list) / length) if length > 0 else 1.0
@@ -189,7 +190,6 @@ class ANLSList(ANLSTree):
             gts.append(gts_row)
             key_scores_mat.append(ks_row)
 
-
         # Check for empty lists - Munkres fails on empty
         if len(mat) == 0 or len(mat[0]) == 0:
             return mat, gts, [], []
@@ -202,7 +202,7 @@ class ANLSList(ANLSTree):
     def pairwise_len(self, other):
         if not isinstance(other, ANLSList):
             return max(len(self), len(other))
-        _, _, indexes = self._hungarian(other, ())
+        _, _, indexes, _ = self._hungarian(other, (), [])
 
         not_selected_self = {*range(len(self.tree))} - {row for row, _ in indexes}
         not_selected_other = {*range(len(other.tree))} - {col for _, col in indexes}
@@ -223,7 +223,9 @@ class ANLSList(ANLSTree):
         if not isinstance(other, ANLSList):
             return [0.0], self.obj, key_scores
 
-        mat, gts, indexes, key_scores_mat = self._hungarian(other, key_hierarchy, key_scores)
+        mat, gts, indexes, key_scores_mat = self._hungarian(
+            other, key_hierarchy, key_scores
+        )
         values = [mat[row][column] for row, column in indexes]
         values = [item for sublist in values for item in sublist]
 
@@ -235,7 +237,9 @@ class ANLSList(ANLSTree):
         ]
         chosen_gt.extend(self.tree[i].obj for i in not_selected_rows)
 
-        chosen_key_scores_with_idx = [(key_scores_mat[row][col], col) for row, col in indexes]
+        chosen_key_scores_with_idx = [
+            (key_scores_mat[row][col], col) for row, col in indexes
+        ]
         chosen_key_scores_with_idx.sort(key=lambda x: x[1])
         chosen_key_scores = [ks for ks, idx in chosen_key_scores_with_idx]
         not_selected_rows = [
@@ -268,7 +272,14 @@ class ANLSDict(ANLSTree):
             pwl += self_value.pairwise_len(other_value)
         return pwl
 
-    def nls_list(self, other, key_hierarchy):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if not isinstance(other, ANLSDict):
             return [0.0], self.obj
 
@@ -289,13 +300,17 @@ class ANLSDict(ANLSTree):
                 continue
 
             new_key_hierarchy = key_hierarchy + (str(k),)
-            nls_list, chosen_gt = self_value.nls_list(other_value, new_key_hierarchy)
+            nls_list, chosen_gt, new_key_scores = self_value.nls_list(
+                other_value, new_key_hierarchy, []
+            )
             nlss.extend(nls_list)
             chosen_gts[k] = chosen_gt
-            mean_nls = sum(nls_list) / len(nls_list) if len(nls_list) > 0 else 1.0
-            global_scores.append({new_key_hierarchy: mean_nls})
 
-        return nlss, chosen_gts
+            mean_nls = sum(nls_list) / len(nls_list) if len(nls_list) > 0 else 1.0
+            key_scores_copy.extend(new_key_scores)
+            key_scores_copy.append({new_key_hierarchy: mean_nls})
+
+        return nlss, chosen_gts, key_scores_copy
 
 
 class ANLSNone(ANLSTree):
@@ -308,12 +323,19 @@ class ANLSNone(ANLSTree):
     def pairwise_len(self, other):
         return max(len(self), len(other))
 
-    def nls_list(self, other, key_hierarchy):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if self.check_if_none(other.obj):
             # If the pred is "None-y", return the pred as the closest gt
-            return [1.0], other.obj
+            return [1.0], other.obj, key_scores_copy
         else:
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
     @classmethod
     def check_if_none(cls, value):
@@ -332,10 +354,17 @@ class ANLSLeaf(ANLSTree):
     def pairwise_len(self, other):
         return max(len(self), len(other))
 
-    def nls_list(self, other, key_hierarchy):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if not isinstance(other, ANLSLeaf):
             # Type mismatch, so the ANLS is 0. But we still calculate the length.
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
         this_str = " ".join(str(self.obj).strip().lower().split())
         other_str = " ".join(str(other.obj).strip().lower().split())
@@ -349,7 +378,7 @@ class ANLSLeaf(ANLSTree):
         if question_result < self.THRESHOLD:
             question_result = 0.0
 
-        return [question_result], self.obj
+        return [question_result], self.obj, key_scores_copy
 
     @staticmethod
     def _levenshtein_distance(s1: str, s2: str):
@@ -429,8 +458,8 @@ def anls_score(gt, pred, return_gt: bool = False):
     global_scores = []
     gt_tree = ANLSTree.make_tree(gt, is_gt=True)
     pred_tree = ANLSTree.make_tree(pred, is_gt=False)
-    anls_score, closest_gt = gt_tree.anls(pred_tree)
-    pprint(global_scores)
+    anls_score, closest_gt, key_scores = gt_tree.anls(pred_tree)
+    pprint(key_scores)
 
     if return_gt:
         return anls_score, closest_gt
