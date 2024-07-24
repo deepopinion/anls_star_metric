@@ -47,3 +47,47 @@ def test_merge_and_calculate_mean(
     assert all(
         isinstance(list(item.values())[0], float) for item in result
     ), "All values should be floats"
+
+
+@pytest.mark.parametrize(
+    "input_list, expected_output",
+    [
+        ([], {}),
+        (
+            [
+                {("a",): 3},
+                {("a", "b", "c"): 1},
+                {("a", "b", "d"): 2},
+                {("a", "c", "e"): 3},
+            ],
+            {
+                "a": ksu.ScoreNode(
+                    anls_score=3,
+                    children={
+                        "b": ksu.ScoreNode(
+                            children={
+                                "c": ksu.ScoreNode(anls_score=1),
+                                "d": ksu.ScoreNode(anls_score=2),
+                            }
+                        ),
+                        "c": ksu.ScoreNode(children={"e": ksu.ScoreNode(anls_score=3)}),
+                    },
+                )
+            },
+        ),
+        (
+            [{("x",): 5.0}, {("y",): 10.0}],
+            {"x": ksu.ScoreNode(anls_score=5.0), "y": ksu.ScoreNode(anls_score=10.0)},
+        ),
+        (
+            [{("a", "b"): 1}, {("a", "b"): 2}],
+            {"a": ksu.ScoreNode(children={"b": ksu.ScoreNode(anls_score=2)})},
+        ),
+    ],
+)
+def test_construct_nested_dict(
+    input_list: list[dict[tuple[str, ...], float]],
+    expected_output: dict,
+):
+    result = ksu.construct_nested_dict(input_list)
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
