@@ -93,6 +93,9 @@ class ANLSTuple(ANLSTree):
             ANLSTree.make_tree(x, is_gt=is_gt) for x in obj
         )
 
+    def __repr__(self):
+        return f"ANLSTuple({repr(self.obj)})"
+
     def __len__(self):
         return max(len(x) for x in self.tree)
 
@@ -154,6 +157,9 @@ class ANLSList(ANLSTree):
             raise ValueError(f"ANLSList expects a list, got {type(obj)}")
         self.obj = obj
         self.tree: list[ANLSTree] = [ANLSTree.make_tree(x, is_gt=is_gt) for x in obj]
+
+    def __repr__(self):
+        return f"ANLSList({repr(self.obj)})"
 
     def __len__(self):
         return sum(len(x) for x in self.tree)
@@ -266,6 +272,9 @@ class ANLSDict(ANLSTree):
             k: ANLSTree.make_tree(v, is_gt=is_gt) for k, v in obj.items()
         }
 
+    def __repr__(self):
+        return f"ANLSDict({repr(self.obj)})"
+
     def __len__(self):
         return sum(len(x) for x in self.tree.values())
 
@@ -324,6 +333,9 @@ class ANLSNone(ANLSTree):
     def __init__(self):
         self.obj = None
 
+    def __repr__(self):
+        return "ANLSNone()"
+
     def __len__(self):
         return 1
 
@@ -354,6 +366,9 @@ class ANLSLeaf(ANLSTree):
         if not isinstance(obj, (str, float, int, bool)):
             raise ValueError(f"Leaf must be a primitive type, got {type(obj)}")
         self.obj = obj
+
+    def __repr__(self):
+        return f"ANLSLeaf({repr(self.obj)})"
 
     def __len__(self):
         return 1
