@@ -14,8 +14,9 @@ from typing import Any, Literal, Union, overload
 
 from munkres import Munkres, make_cost_matrix
 from pprint import pprint
+from . import key_scores_utils as ksu
 
-global_scores: list[dict[tuple[str, ...], float]] = []
+key_score_type = dict[tuple[str, ...], float]
 
 
 class ANLSTree(abc.ABC):
@@ -46,7 +47,9 @@ class ANLSTree(abc.ABC):
                 f"Found unsupported type {type(obj)} for {obj} while creating ANLS tree"
             )
 
-    def anls(self, other: "ANLSTree") -> tuple[float, "ANLSTree", list[dict[tuple[str, ...], float]]]:
+    def anls(
+        self, other: "ANLSTree"
+    ) -> tuple[float, "ANLSTree", list[dict[tuple[str, ...], float]]]:
         nls_list, closest_gt, key_scores = self.nls_list(other, (), [])
         length = self.pairwise_len(other)
         return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt, key_scores
@@ -247,7 +250,11 @@ class ANLSList(ANLSTree):
         ]
         chosen_key_scores.extend(key_scores_mat[i] for i in not_selected_rows)
 
-        return values, chosen_gt, chosen_key_scores
+        flattened_chosen_key_scores = []
+        for ks in chosen_key_scores:
+            flattened_chosen_key_scores.extend(ks)
+
+        return values, chosen_gt, flattened_chosen_key_scores
 
 
 class ANLSDict(ANLSTree):
@@ -400,22 +407,36 @@ class ANLSLeaf(ANLSTree):
 
 
 @overload
-def anls_score(gt: Any, pred: Any, *, return_gt: Literal[False]) -> float: ...
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: Literal[False], return_key_scores: Literal[False]
+) -> float: ...
 
 
 @overload
 def anls_score(
-    gt: Any, pred: Any, *, return_gt: Literal[True]
+    gt: Any, pred: Any, *, return_gt: Literal[True], return_key_scores: Literal[False]
 ) -> tuple[float, Any]: ...
 
 
 @overload
 def anls_score(
-    gt: Any, pred: Any, *, return_gt: bool = False
-) -> Union[float, tuple[float, Any]]: ...
+    gt: Any, pred: Any, *, return_gt: Literal[False], return_key_scores: Literal[True]
+) -> tuple[float, dict]: ...
 
 
-def anls_score(gt, pred, return_gt: bool = False):
+@overload
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: Literal[True], return_key_scores: Literal[True]
+) -> tuple[float, Any, dict]: ...
+
+
+@overload
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: bool = False, return_key_scores: bool = False
+) -> Union[float, tuple[float, Any], tuple[float, dict], tuple[float, Any, dict]]: ...
+
+
+def anls_score(gt, pred, return_gt: bool = False, return_key_scores: bool = False):
     """Run ANLS on a ground truth and prediction object. The returned score is a value between 0 and 1, where 1 is the best possible score. For further information on the ANLS metric and the types see https://arxiv.org/abs/2402.03848
 
     Types of gt and pred:
@@ -431,6 +452,7 @@ def anls_score(gt, pred, return_gt: bool = False):
         gt: The ground truth object. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
         pred: The prediction object - usually the output of the model. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
         return_gt: If `True`, the function also returns the object that best matches the prediction, and can be derived from the ground truth (i.e. selecting options from tuples, reordering lists, etc.). This is useful for debugging and error analysis.
+        return_key_scores: If `True`, the function also returns a dictionary that contains aggregated ANLS* scores for dictionary keys in the ground truth and prediction. This is useful for gaining insights into what parts of the predictions are correct and what parts are incorrect.
 
 
     Returns:
@@ -454,13 +476,25 @@ def anls_score(gt, pred, return_gt: bool = False):
             "Treating ground truth as a list of options. This is a compatibility mode for ST-VQA-like datasets."
         )
         gt = tuple(gt)
-    global global_scores
-    global_scores = []
+
     gt_tree = ANLSTree.make_tree(gt, is_gt=True)
     pred_tree = ANLSTree.make_tree(pred, is_gt=False)
     anls_score, closest_gt, key_scores = gt_tree.anls(pred_tree)
-    pprint(key_scores)
 
-    if return_gt:
+    if return_key_scores:
+        pprint(key_scores)
+        merged_key_scores = ksu.merge_and_calculate_mean(key_scores)
+        pprint(merged_key_scores)
+
+        key_scores_dict = ksu.construct_nested_dict(key_scores)
+        pprint(key_scores_dict)
+
+    # The return could be done more cleverly by dynamically building the return tuple, but this would mess up the type hints
+    if return_gt and return_key_scores:
+        return anls_score, closest_gt, key_scores_dict
+    elif return_gt and not return_key_scores:
         return anls_score, closest_gt
-    return anls_score
+    elif not return_gt and return_key_scores:
+        return anls_score, key_scores_dict
+    else:
+        return anls_score
