@@ -49,6 +49,76 @@ diff = DeepDiff(closest_gt, pred)
 #                            "root['b'][3]": {'new_value': 'be', 'old_value': 'is'}}}
 ```
 
+### Returning key scores
+The `anls_score` function can also return a dictionary containing aggregated ANLS* scores for dictionary keys in the ground truth and prediction. This is useful for gaining insights into what parts of the predictions are correct and what parts are incorrect. To use this feature, set the `return_key_scores` argument to `True`.
+
+Here's an example that demonstrates the use of `return_key_scores`:
+
+```python
+from anls_star import anls_score
+
+gt = {
+    "a": "Hello",
+    "b": [{"l1": "aa", "l2": "b"}, {"l1": "c", "l2": "d"}],
+    "c": "Test",
+    "second_order": {
+        "name": "Fluffy",
+        "age": "3",
+        "items": [{"id": "1", "value": "12.3"}, {"id": "2", "value": "13.4"}],
+    },
+}
+pred = {
+    "a": "Helloo",
+    "b": [{"l1": "a", "l2": "q"}, {"l1": "c", "l2": "d"}],
+    "second_order": {
+        "name": "Fluffy",
+        "age": "31",
+        "items": [{"id": "1", "value": "12.1"}, {"id": "3", "value": "13.4"}],
+    },
+}
+
+anls, key_scores = anls_score(gt, pred, return_key_scores=True)
+print("Key scores:")
+print(key_scores)
+```
+
+This would output:
+
+```
+Key scores:
+{
+    'a': ScoreNode(anls_score=0.8333333333333334),
+    'b': ScoreNode(
+        anls_score=0.4166666666666667,
+        children={
+            'l1': ScoreNode(anls_score=0.75),
+            'l2': ScoreNode(anls_score=0.5),
+        }
+    ),
+    'c': ScoreNode(anls_score=0.0),
+    'second_order': ScoreNode(
+        anls_score=0.7083333333333334,
+        children={
+            'age': ScoreNode(anls_score=0.5),
+            'items': ScoreNode(
+                anls_score=0.6875,
+                children={
+                    'id': ScoreNode(anls_score=0.5),
+                    'value': ScoreNode(anls_score=0.875),
+                }
+            ),
+            'name': ScoreNode(anls_score=1.0),
+        }
+    ),
+}
+```
+
+The `key_scores` dictionary contains `ScoreNode` objects, which have `anls_score` and `children` attributes. The `anls_score` attribute represents the ANLS* score for that specific key, while the `children` attribute contains nested dictionaries of the same structure for nested keys.
+
+This detailed breakdown allows you to identify which parts of the prediction are accurate and which parts need improvement, providing valuable insights for error analysis and model refinement.
+
+The `return_key_scores` and `return_gt` arguments can be used together to get both the closest match and key scores in a single call to `anls_score`, in which case the return will be `(score, closest_gt, key_scores)`.
+
 ## Supported Types
 Simply copy this file to your project and import the `anls_score` function from it. Then call the function with the ground truth and the predictions. 
 
