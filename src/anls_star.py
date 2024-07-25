@@ -170,11 +170,30 @@ class ANLSList(ANLSTree):
         key_hierarchy: tuple[str, ...],
         key_scores: list[dict[tuple[str, ...], float]],
     ):
+        """
+        Perform Hungarian algorithm matching between self and other ANLSList.
+
+        This method computes the optimal matching between elements of self and other,
+        using the Hungarian algorithm to minimize the total cost (maximize similarity).
+
+        Args:
+            other (ANLSList): The other ANLSList to match against.
+            key_hierarchy (tuple[str, ...]): The current key hierarchy for nested structures.
+            key_scores (list[dict[tuple[str, ...], float]]): List to store key-wise scores.
+
+        Returns:
+            tuple: A tuple containing:
+                - mat (list[list[list[float]]]): Matrix of NLS scores for each pair.
+                - gts (list[list[Any]]): Matrix of chosen ground truths for each pair.
+                - indexes (list[tuple[int, int]]): Optimal matching indexes from Hungarian algorithm.
+                - key_scores_mat (list[list[dict[tuple[str, ...], float]]]): Matrix of key scores for each pair.
+        """
         mat: list[list[list[float]]] = []
         avg_mat: list[list[float]] = []
         gts: list[list[Any]] = []
         key_scores_mat: list[list[dict[tuple[str, ...], float]]] = []
 
+        # Compute NLS scores and averages for all pairs of elements
         for gt in self.tree:
             row = []
             avg_row = []
