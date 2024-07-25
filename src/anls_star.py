@@ -246,35 +246,47 @@ class ANLSList(ANLSTree):
         key_hierarchy: tuple[str, ...],
         key_scores: list[dict[tuple[str, ...], float]],
     ):
+        # Create a copy of key_scores to avoid modifying the original
         key_scores = key_scores.copy()
 
+        # If 'other' is not an ANLSList, return a default score of 0.0
         if not isinstance(other, ANLSList):
             return [0.0], self.obj, key_scores
 
+        # Perform Hungarian algorithm matching
         mat, gts, indexes, key_scores_mat = self._hungarian(
             other, key_hierarchy, key_scores
         )
-        values = [mat[row][column] for row, column in indexes]
-        values = [item for sublist in values for item in sublist]
 
+        # Extract NLS values for matched pairs
+        values = [mat[row][column] for row, column in indexes]
+        values = [item for sublist in values for item in sublist]  # Flatten the list
+
+        # Process chosen ground truths
         chosen_gt_with_idx = [(gts[row][col], col) for row, col in indexes]
-        chosen_gt_with_idx.sort(key=lambda x: x[1])
+        chosen_gt_with_idx.sort(key=lambda x: x[1])  # Sort by column index
         chosen_gt = [gt for gt, idx in chosen_gt_with_idx]
+
+        # Add ground truths for unmatched rows
         not_selected_rows = [
             i for i in range(len(self.tree)) if i not in {row for row, _ in indexes}
         ]
         chosen_gt.extend(self.tree[i].obj for i in not_selected_rows)
 
+        # Process chosen key scores
         chosen_key_scores_with_idx = [
             (key_scores_mat[row][col], col) for row, col in indexes
         ]
-        chosen_key_scores_with_idx.sort(key=lambda x: x[1])
+        chosen_key_scores_with_idx.sort(key=lambda x: x[1])  # Sort by column index
         chosen_key_scores = [ks for ks, idx in chosen_key_scores_with_idx]
+
+        # Add key scores for unmatched rows
         not_selected_rows = [
             i for i in range(len(self.tree)) if i not in {row for row, _ in indexes}
         ]
         chosen_key_scores.extend(key_scores_mat[i] for i in not_selected_rows)
 
+        # Flatten the chosen key scores
         flattened_chosen_key_scores = []
         for ks in chosen_key_scores:
             flattened_chosen_key_scores.extend(ks)
