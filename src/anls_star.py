@@ -13,7 +13,6 @@ import warnings
 from typing import Any, Literal, Union, overload, cast
 
 from munkres import Munkres, make_cost_matrix
-from pprint import pprint
 from . import key_scores_utils as ksu
 
 key_score_type = dict[tuple[str, ...], float]
@@ -347,7 +346,8 @@ class ANLSDict(ANLSTree):
             nlss.extend(nls_list)
             chosen_gts[k] = chosen_gt
 
-            mean_nls = sum(nls_list) / len(nls_list) if len(nls_list) > 0 else 1.0
+            length = self_value.pairwise_len(other_value)
+            mean_nls = sum(nls_list) / length if length > 0 else 1.0
             key_scores_copy.extend(new_key_scores)
             key_scores_copy.append({new_key_hierarchy: mean_nls})
 
