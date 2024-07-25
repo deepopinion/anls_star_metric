@@ -10,9 +10,10 @@ DeepOpinion, 2024
 import abc
 import math
 import warnings
-from typing import Any, Literal, Union, overload
+from typing import Any, Literal, Union, overload, cast
 
 from munkres import Munkres, make_cost_matrix
+from . import key_scores_utils as ksu
 
 
 class ANLSTree(abc.ABC):
@@ -43,10 +44,12 @@ class ANLSTree(abc.ABC):
                 f"Found unsupported type {type(obj)} for {obj} while creating ANLS tree"
             )
 
-    def anls(self, other: "ANLSTree") -> tuple[float, "ANLSTree"]:
-        nls_list, closest_gt = self.nls_list(other)
+    def anls(
+        self, other: "ANLSTree"
+    ) -> tuple[float, "ANLSTree", list[dict[tuple[str, ...], float]]]:
+        nls_list, closest_gt, key_scores = self.nls_list(other, (), [])
         length = self.pairwise_len(other)
-        return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt
+        return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt, key_scores
 
     def __str__(self) -> str:
         return f"ANLSTree({repr(self.obj)})"
@@ -63,7 +66,12 @@ class ANLSTree(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def nls_list(self, other: "ANLSTree") -> tuple[list[float], Any]:
+    def nls_list(
+        self,
+        other: "ANLSTree",
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ) -> tuple[list[float], Any, list[dict[tuple[str, ...], float]]]:
         pass
 
 
@@ -82,39 +90,62 @@ class ANLSTuple(ANLSTree):
             ANLSTree.make_tree(x, is_gt=is_gt) for x in obj
         )
 
+    def __repr__(self):
+        return f"ANLSTuple({repr(self.obj)})"
+
     def __len__(self):
         return max(len(x) for x in self.tree)
 
-    def _choose_best_item(self, other):
+    def _choose_best_item(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
         candidate_nlss: list[list[float]] = []
         lengths: list[int] = []
         gts: list[Any] = []
+        new_key_scores_list: list[list[dict[tuple[str, ...], float]]] = []
         for gt in self.tree:
-            cand_nlss, chosen_gt = gt.nls_list(other)
+            cand_nlss, chosen_gt, new_key_scores = gt.nls_list(
+                other, key_hierarchy, key_scores
+            )
             candidate_nlss.append(cand_nlss)
             gts.append(chosen_gt)
             lengths.append(gt.pairwise_len(other))
-        # Select the best matching choice
+            new_key_scores_list.append(new_key_scores)
 
+        # Select the best matching choice
         def sort_avg_nls_then_eq(tuple_):
             """Sort by average NLS, then by ground truth equality in case of ties."""
-            nls_list, length, gts = tuple_
+            nls_list, length, gts, _ = tuple_
             avg = (sum(nls_list) / length) if length > 0 else 1.0
             gt_eq = 1 if gts == other.obj else 0
             return (avg, gt_eq)
 
-        best_nls, best_length, chosen_gt = max(
-            zip(candidate_nlss, lengths, gts), key=sort_avg_nls_then_eq
+        best_nls, best_length, chosen_gt, chosen_key_scores = max(
+            zip(candidate_nlss, lengths, gts, new_key_scores_list),
+            key=sort_avg_nls_then_eq,
         )
-        return best_nls, best_length, chosen_gt
+        return best_nls, best_length, chosen_gt, chosen_key_scores
 
     def pairwise_len(self, other):
-        best_nls, best_length, chosen_gt = self._choose_best_item(other)
+        best_nls, best_length, chosen_gt, chosen_key_scores = self._choose_best_item(
+            other, (), []
+        )
         return best_length
 
-    def nls_list(self, other):
-        best_nls, best_length, chosen_gt = self._choose_best_item(other)
-        return best_nls, chosen_gt
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ) -> tuple[list[float], Any, list[dict[tuple[str, ...], float]]]:
+        key_scores = key_scores.copy()
+        best_nls, best_length, chosen_gt, chosen_key_scores = self._choose_best_item(
+            other, key_hierarchy, key_scores
+        )
+        return best_nls, chosen_gt, chosen_key_scores
 
 
 class ANLSList(ANLSTree):
@@ -124,19 +155,52 @@ class ANLSList(ANLSTree):
         self.obj = obj
         self.tree: list[ANLSTree] = [ANLSTree.make_tree(x, is_gt=is_gt) for x in obj]
 
+    def __repr__(self):
+        return f"ANLSList({repr(self.obj)})"
+
     def __len__(self):
         return sum(len(x) for x in self.tree)
 
-    def _hungarian(self, other: "ANLSList"):
+    def _hungarian(
+        self,
+        other: "ANLSList",
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        """
+        Perform Hungarian algorithm matching between self and other ANLSList.
+
+        This method computes the optimal matching between elements of self and other,
+        using the Hungarian algorithm to minimize the total cost (maximize similarity).
+
+        Args:
+            other (ANLSList): The other ANLSList to match against.
+            key_hierarchy (tuple[str, ...]): The current key hierarchy for nested structures.
+            key_scores (list[dict[tuple[str, ...], float]]): List to store key-wise scores.
+
+        Returns:
+            tuple: A tuple containing:
+                - mat (list[list[list[float]]]): Matrix of NLS scores for each pair.
+                - gts (list[list[Any]]): Matrix of chosen ground truths for each pair.
+                - indexes (list[tuple[int, int]]): Optimal matching indexes from Hungarian algorithm.
+                - key_scores_mat (list[list[dict[tuple[str, ...], float]]]): Matrix of key scores for each pair.
+        """
         mat: list[list[list[float]]] = []
         avg_mat: list[list[float]] = []
         gts: list[list[Any]] = []
+        key_scores_mat: list[list[list[dict[tuple[str, ...], float]]]] = []
+
+        # Compute NLS scores and averages for all pairs of elements
         for gt in self.tree:
             row = []
             avg_row = []
             gts_row = []
+            ks_row: list[list[dict[tuple[str, ...], float]]] = []
             for pred in other.tree:
-                nls_list, chosen_gt = gt.nls_list(pred)
+                key_scores_copy = key_scores.copy()
+                nls_list, chosen_gt, new_key_scores = gt.nls_list(
+                    pred, key_hierarchy, key_scores_copy
+                )
                 length = gt.pairwise_len(pred)
                 row.append(nls_list)
                 avg = (sum(nls_list) / length) if length > 0 else 1.0
@@ -145,23 +209,26 @@ class ANLSList(ANLSTree):
                     avg = math.nextafter(avg, float("inf"))
                 avg_row.append(avg)
                 gts_row.append(chosen_gt)
+                ks_row.append(new_key_scores)
             mat.append(row)
             avg_mat.append(avg_row)
             gts.append(gts_row)
+            key_scores_mat.append(ks_row)
 
         # Check for empty lists - Munkres fails on empty
         if len(mat) == 0 or len(mat[0]) == 0:
-            return mat, gts, []
+            return mat, gts, [], []
 
         # Run Hungarian algorithm
         m_cost_matrix = make_cost_matrix(avg_mat)
         indexes = Munkres().compute(m_cost_matrix)
-        return mat, gts, indexes
+        indexes = cast(list[tuple[int, int]], indexes)
+        return mat, gts, indexes, key_scores_mat
 
     def pairwise_len(self, other):
         if not isinstance(other, ANLSList):
             return max(len(self), len(other))
-        _, _, indexes = self._hungarian(other)
+        _, _, indexes, _ = self._hungarian(other, (), [])
 
         not_selected_self = {*range(len(self.tree))} - {row for row, _ in indexes}
         not_selected_other = {*range(len(other.tree))} - {col for _, col in indexes}
@@ -171,23 +238,51 @@ class ANLSList(ANLSTree):
         pwl += sum(len(other.tree[j]) for j in not_selected_other)
         return pwl
 
-    def nls_list(self, other: ANLSTree):
+    def nls_list(
+        self,
+        other: ANLSTree,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ) -> tuple[list[float], Any, list[dict[tuple[str, ...], float]]]:
+        key_scores = key_scores.copy()
+
+        # If 'other' is not an ANLSList, return a default score of 0.0
         if not isinstance(other, ANLSList):
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores
 
-        mat, gts, indexes = self._hungarian(other)
+        # Perform Hungarian algorithm matching
+        mat, gts, indexes, key_scores_mat = self._hungarian(
+            other, key_hierarchy, key_scores
+        )
+
+        # Extract NLS values for matched pairs
         values = [mat[row][column] for row, column in indexes]
-        values = [item for sublist in values for item in sublist]
+        values = [item for sublist in values for item in sublist]  # Flatten the list
 
+        # Process chosen ground truths
         chosen_gt_with_idx = [(gts[row][col], col) for row, col in indexes]
-        chosen_gt_with_idx.sort(key=lambda x: x[1])
+        chosen_gt_with_idx.sort(key=lambda x: x[1])  # Sort by column index
         chosen_gt = [gt for gt, idx in chosen_gt_with_idx]
+
+        # Add ground truths for unmatched rows
         not_selected_rows = [
             i for i in range(len(self.tree)) if i not in {row for row, _ in indexes}
         ]
         chosen_gt.extend(self.tree[i].obj for i in not_selected_rows)
 
-        return values, chosen_gt
+        # Process chosen key scores
+        chosen_key_scores_with_idx = [
+            (key_scores_mat[row][col], col) for row, col in indexes
+        ]
+        chosen_key_scores_with_idx.sort(key=lambda x: x[1])  # Sort by column index
+        chosen_key_scores = [ks for ks, idx in chosen_key_scores_with_idx]
+
+        # Flatten the chosen key scores
+        flattened_chosen_key_scores: list[dict[tuple[str, ...], float]] = []
+        for ks in chosen_key_scores:
+            flattened_chosen_key_scores.extend(ks)
+
+        return values, chosen_gt, flattened_chosen_key_scores
 
 
 class ANLSDict(ANLSTree):
@@ -198,6 +293,9 @@ class ANLSDict(ANLSTree):
         self.tree: dict[Any, ANLSTree] = {
             k: ANLSTree.make_tree(v, is_gt=is_gt) for k, v in obj.items()
         }
+
+    def __repr__(self):
+        return f"ANLSDict({repr(self.obj)})"
 
     def __len__(self):
         return sum(len(x) for x in self.tree.values())
@@ -212,9 +310,16 @@ class ANLSDict(ANLSTree):
             pwl += self_value.pairwise_len(other_value)
         return pwl
 
-    def nls_list(self, other):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if not isinstance(other, ANLSDict):
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
         nlss = []
         chosen_gts = {}
@@ -232,16 +337,27 @@ class ANLSDict(ANLSTree):
             if is_hallucinated_none_key:
                 continue
 
-            nls_list, chosen_gt = self_value.nls_list(other_value)
+            new_key_hierarchy = key_hierarchy + (str(k),)
+            nls_list, chosen_gt, new_key_scores = self_value.nls_list(
+                other_value, new_key_hierarchy, []
+            )
             nlss.extend(nls_list)
             chosen_gts[k] = chosen_gt
 
-        return nlss, chosen_gts
+            length = self_value.pairwise_len(other_value)
+            mean_nls = sum(nls_list) / length if length > 0 else 1.0
+            key_scores_copy.extend(new_key_scores)
+            key_scores_copy.append({new_key_hierarchy: mean_nls})
+
+        return nlss, chosen_gts, key_scores_copy
 
 
 class ANLSNone(ANLSTree):
     def __init__(self):
         self.obj = None
+
+    def __repr__(self):
+        return "ANLSNone()"
 
     def __len__(self):
         return 1
@@ -249,12 +365,19 @@ class ANLSNone(ANLSTree):
     def pairwise_len(self, other):
         return max(len(self), len(other))
 
-    def nls_list(self, other):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if self.check_if_none(other.obj):
             # If the pred is "None-y", return the pred as the closest gt
-            return [1.0], other.obj
+            return [1.0], other.obj, key_scores_copy
         else:
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
     @classmethod
     def check_if_none(cls, value):
@@ -267,16 +390,26 @@ class ANLSLeaf(ANLSTree):
             raise ValueError(f"Leaf must be a primitive type, got {type(obj)}")
         self.obj = obj
 
+    def __repr__(self):
+        return f"ANLSLeaf({repr(self.obj)})"
+
     def __len__(self):
         return 1
 
     def pairwise_len(self, other):
         return max(len(self), len(other))
 
-    def nls_list(self, other):
+    def nls_list(
+        self,
+        other,
+        key_hierarchy: tuple[str, ...],
+        key_scores: list[dict[tuple[str, ...], float]],
+    ):
+        key_scores_copy = key_scores.copy()
+
         if not isinstance(other, ANLSLeaf):
             # Type mismatch, so the ANLS is 0. But we still calculate the length.
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
         this_str = " ".join(str(self.obj).strip().lower().split())
         other_str = " ".join(str(other.obj).strip().lower().split())
@@ -290,7 +423,7 @@ class ANLSLeaf(ANLSTree):
         if question_result < self.THRESHOLD:
             question_result = 0.0
 
-        return [question_result], self.obj
+        return [question_result], self.obj, key_scores_copy
 
     @staticmethod
     def _levenshtein_distance(s1: str, s2: str):
@@ -312,22 +445,36 @@ class ANLSLeaf(ANLSTree):
 
 
 @overload
-def anls_score(gt: Any, pred: Any, *, return_gt: Literal[False]) -> float: ...
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: Literal[False], return_key_scores: Literal[False]
+) -> float: ...
 
 
 @overload
 def anls_score(
-    gt: Any, pred: Any, *, return_gt: Literal[True]
+    gt: Any, pred: Any, *, return_gt: Literal[True], return_key_scores: Literal[False]
 ) -> tuple[float, Any]: ...
 
 
 @overload
 def anls_score(
-    gt: Any, pred: Any, *, return_gt: bool = False
-) -> Union[float, tuple[float, Any]]: ...
+    gt: Any, pred: Any, *, return_gt: Literal[False], return_key_scores: Literal[True]
+) -> tuple[float, dict]: ...
 
 
-def anls_score(gt, pred, return_gt: bool = False):
+@overload
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: Literal[True], return_key_scores: Literal[True]
+) -> tuple[float, Any, dict]: ...
+
+
+@overload
+def anls_score(
+    gt: Any, pred: Any, *, return_gt: bool = False, return_key_scores: bool = False
+) -> Union[float, tuple[float, Any], tuple[float, dict], tuple[float, Any, dict]]: ...
+
+
+def anls_score(gt, pred, return_gt: bool = False, return_key_scores: bool = False):
     """Run ANLS on a ground truth and prediction object. The returned score is a value between 0 and 1, where 1 is the best possible score. For further information on the ANLS metric and the types see https://arxiv.org/abs/2402.03848
 
     Types of gt and pred:
@@ -343,6 +490,7 @@ def anls_score(gt, pred, return_gt: bool = False):
         gt: The ground truth object. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
         pred: The prediction object - usually the output of the model. Can be a string, list, tuple, dict, or any combination of those. See type descriptions above.
         return_gt: If `True`, the function also returns the object that best matches the prediction, and can be derived from the ground truth (i.e. selecting options from tuples, reordering lists, etc.). This is useful for debugging and error analysis.
+        return_key_scores: If `True`, the function also returns a dictionary that contains aggregated ANLS* scores for dictionary keys in the ground truth and prediction. This is useful for gaining insights into what parts of the predictions are correct and what parts are incorrect.
 
 
     Returns:
@@ -369,8 +517,18 @@ def anls_score(gt, pred, return_gt: bool = False):
 
     gt_tree = ANLSTree.make_tree(gt, is_gt=True)
     pred_tree = ANLSTree.make_tree(pred, is_gt=False)
-    anls_score, closest_gt = gt_tree.anls(pred_tree)
+    anls_score, closest_gt, key_scores = gt_tree.anls(pred_tree)
 
-    if return_gt:
+    if return_key_scores:
+        merged_key_scores = ksu.merge_and_calculate_mean(key_scores)
+        key_scores_dict = ksu.construct_nested_dict(merged_key_scores)
+
+    # The return could be done more cleverly by dynamically building the return tuple, but this would mess up the type hints
+    if return_gt and return_key_scores:
+        return anls_score, closest_gt, key_scores_dict
+    elif return_gt and not return_key_scores:
         return anls_score, closest_gt
-    return anls_score
+    elif not return_gt and return_key_scores:
+        return anls_score, key_scores_dict
+    else:
+        return anls_score
