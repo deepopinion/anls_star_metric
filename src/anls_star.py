@@ -10,7 +10,7 @@ DeepOpinion, 2024
 import abc
 import math
 import warnings
-from typing import Any, Literal, Union, overload
+from typing import Any, Literal, Union, overload, cast
 
 from munkres import Munkres, make_cost_matrix
 from pprint import pprint
@@ -225,6 +225,7 @@ class ANLSList(ANLSTree):
         # Run Hungarian algorithm
         m_cost_matrix = make_cost_matrix(avg_mat)
         indexes = Munkres().compute(m_cost_matrix)
+        indexes = cast(list[tuple[int, int]], indexes)
         return mat, gts, indexes, key_scores_mat
 
     def pairwise_len(self, other):
@@ -246,7 +247,6 @@ class ANLSList(ANLSTree):
         key_hierarchy: tuple[str, ...],
         key_scores: list[dict[tuple[str, ...], float]],
     ):
-        # Create a copy of key_scores to avoid modifying the original
         key_scores = key_scores.copy()
 
         # If 'other' is not an ANLSList, return a default score of 0.0
@@ -279,12 +279,6 @@ class ANLSList(ANLSTree):
         ]
         chosen_key_scores_with_idx.sort(key=lambda x: x[1])  # Sort by column index
         chosen_key_scores = [ks for ks, idx in chosen_key_scores_with_idx]
-
-        # Add key scores for unmatched rows
-        not_selected_rows = [
-            i for i in range(len(self.tree)) if i not in {row for row, _ in indexes}
-        ]
-        chosen_key_scores.extend(key_scores_mat[i] for i in not_selected_rows)
 
         # Flatten the chosen key scores
         flattened_chosen_key_scores = []
