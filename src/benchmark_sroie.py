@@ -68,7 +68,7 @@ def load_dataset():
 
     return gt
 
-semaphore = asyncio.Semaphore(10)
+semaphore = asyncio.Semaphore(7)
 async def evaluate_sample(file_name, label):
     async with semaphore:
         try:

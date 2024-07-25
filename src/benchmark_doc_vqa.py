@@ -36,7 +36,7 @@ if not os.path.exists(val_json_file):
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(10)
+semaphore = asyncio.Semaphore(7)
 async def evaluate_sample(sample):
     async with semaphore:
         try:
