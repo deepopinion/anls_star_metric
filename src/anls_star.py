@@ -148,7 +148,7 @@ class ANLSTuple(ANLSTree):
         best_nls, best_length, chosen_gt, chosen_key_scores = self._choose_best_item(
             other, key_hierarchy, key_scores
         )
-        return best_nls, chosen_gt, key_scores, chosen_key_scores
+        return best_nls, chosen_gt, chosen_key_scores
 
 
 class ANLSList(ANLSTree):
