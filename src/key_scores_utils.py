@@ -1,13 +1,17 @@
 from typing import Any, Optional
 from dataclasses import dataclass, field
 
+
 @dataclass
 class ScoreNode:
     anls_score: Optional[float] = None
     children: dict[str, Any] = field(default_factory=dict)
 
-def construct_nested_dict(list_of_dicts: list[dict[tuple[str, ...], float]]):
-    """ Construct a nested dictionary from a list of dictionaries with nested keys.
+
+def construct_nested_dict(
+    list_of_dicts: list[dict[tuple[str, ...], float]]
+) -> dict[str, ScoreNode]:
+    """Construct a nested dictionary from a list of dictionaries with nested keys.
 
     Note: If there are duplicates of keys in the list of dictionaries, the last value will be used.
 
@@ -19,28 +23,42 @@ def construct_nested_dict(list_of_dicts: list[dict[tuple[str, ...], float]]):
 
     Example:
         >>> list_of_dicts = [
-        ...     {('a', 'b', 'c'): 1},
-        ...     {('a', 'b', 'd'): 2},
-        ...     {('a', 'c', 'e'): 3},
-        ... ]
-
+                {("a",): 3},
+                {("a", "b", "c"): 1},
+                {("a", "b", "d"): 2},
+                {("a", "c", "e"): 3},
+            ],
         >>> construct_nested_dict(list_of_dicts)
+            {
+                "a": ScoreNode(
+                    anls_score=3,
+                    children={
+                        "b": ScoreNode(
+                            children={
+                                "c": ScoreNode(anls_score=1),
+                                "d": ScoreNode(anls_score=2),
+                            }
+                        ),
+                        "c": ScoreNode(children={"e": ksu.ScoreNode(anls_score=3)}),
+                    },
+                )
+            },
     """
-    nested_dict = {}
+    nested_dict: dict[str, ScoreNode] = {}
 
     if len(list_of_dicts) == 0:
         return nested_dict
 
     for entry in list_of_dicts:
         for key_tuple, value in entry.items():
-            current_dict = nested_dict
+            current_dict: dict[str, ScoreNode] = nested_dict
             # Traverse and build nested dict, except for last entry
             for key in key_tuple[:-1]:
                 if key not in current_dict:
                     current_dict[key] = ScoreNode()
                 current_dict = current_dict[key].children
 
-            # Set the final key to the Node
+            # Set the value for the final key
             final_key = key_tuple[-1]
             if final_key not in current_dict:
                 current_dict[final_key] = ScoreNode()
@@ -48,7 +66,10 @@ def construct_nested_dict(list_of_dicts: list[dict[tuple[str, ...], float]]):
 
     return nested_dict
 
-def merge_and_calculate_mean(list_of_dicts: list[dict[tuple[str, ...], float]]):
+
+def merge_and_calculate_mean(
+    list_of_dicts: list[dict[tuple[str, ...], float]]
+) -> list[dict[tuple[str, ...], float]]:
     """
     Merges a list of dictionaries and calculates the mean of values for each key.
 
@@ -71,8 +92,8 @@ def merge_and_calculate_mean(list_of_dicts: list[dict[tuple[str, ...], float]]):
         >>> merge_and_calculate_mean(list_of_dicts)
         [{('a', 'b'): 20.0}, {('c', 'd'): 20.0}, {('e', 'f'): 40.0}]
     """
-    combined_scores = {}
-    count_dict = {}
+    combined_scores: dict[tuple[str, ...], float] = {}
+    count_dict: dict[tuple[str, ...], int] = {}
 
     for d in list_of_dicts:
         for k, v in d.items():
