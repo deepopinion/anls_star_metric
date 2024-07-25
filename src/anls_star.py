@@ -15,8 +15,6 @@ from typing import Any, Literal, Union, overload, cast
 from munkres import Munkres, make_cost_matrix
 from . import key_scores_utils as ksu
 
-key_score_type = dict[tuple[str, ...], float]
-
 
 class ANLSTree(abc.ABC):
     THRESHOLD = 0.5  # ANLS threshold. 0.5 is a standard value.
