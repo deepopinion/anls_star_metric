@@ -143,7 +143,7 @@ class ANLSTuple(ANLSTree):
         other,
         key_hierarchy: tuple[str, ...],
         key_scores: list[dict[tuple[str, ...], float]],
-    ):
+    ) -> tuple[list[float], Any, list[dict[tuple[str, ...], float]]]:
         key_scores = key_scores.copy()
         best_nls, best_length, chosen_gt, chosen_key_scores = self._choose_best_item(
             other, key_hierarchy, key_scores
@@ -191,14 +191,14 @@ class ANLSList(ANLSTree):
         mat: list[list[list[float]]] = []
         avg_mat: list[list[float]] = []
         gts: list[list[Any]] = []
-        key_scores_mat: list[list[dict[tuple[str, ...], float]]] = []
+        key_scores_mat: list[list[list[dict[tuple[str, ...], float]]]] = []
 
         # Compute NLS scores and averages for all pairs of elements
         for gt in self.tree:
             row = []
             avg_row = []
             gts_row = []
-            ks_row = []
+            ks_row: list[list[dict[tuple[str, ...], float]]] = []
             for pred in other.tree:
                 key_scores_copy = key_scores.copy()
                 nls_list, chosen_gt, new_key_scores = gt.nls_list(
@@ -246,7 +246,7 @@ class ANLSList(ANLSTree):
         other: ANLSTree,
         key_hierarchy: tuple[str, ...],
         key_scores: list[dict[tuple[str, ...], float]],
-    ):
+    ) -> tuple[list[float], Any, list[dict[tuple[str, ...], float]]]:
         key_scores = key_scores.copy()
 
         # If 'other' is not an ANLSList, return a default score of 0.0
@@ -281,7 +281,7 @@ class ANLSList(ANLSTree):
         chosen_key_scores = [ks for ks, idx in chosen_key_scores_with_idx]
 
         # Flatten the chosen key scores
-        flattened_chosen_key_scores = []
+        flattened_chosen_key_scores: list[dict[tuple[str, ...], float]] = []
         for ks in chosen_key_scores:
             flattened_chosen_key_scores.extend(ks)
 
@@ -322,7 +322,7 @@ class ANLSDict(ANLSTree):
         key_scores_copy = key_scores.copy()
 
         if not isinstance(other, ANLSDict):
-            return [0.0], self.obj
+            return [0.0], self.obj, key_scores_copy
 
         nlss = []
         chosen_gts = {}
