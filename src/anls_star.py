@@ -522,12 +522,8 @@ def anls_score(gt, pred, return_gt: bool = False, return_key_scores: bool = Fals
     anls_score, closest_gt, key_scores = gt_tree.anls(pred_tree)
 
     if return_key_scores:
-        pprint(key_scores)
         merged_key_scores = ksu.merge_and_calculate_mean(key_scores)
-        pprint(merged_key_scores)
-
-        key_scores_dict = ksu.construct_nested_dict(key_scores)
-        pprint(key_scores_dict)
+        key_scores_dict = ksu.construct_nested_dict(merged_key_scores)
 
     # The return could be done more cleverly by dynamically building the return tuple, but this would mess up the type hints
     if return_gt and return_key_scores:
