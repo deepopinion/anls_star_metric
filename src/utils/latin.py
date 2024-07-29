@@ -7,13 +7,12 @@
 #
 # LATIN Prompting
 #
-def to_prompt(scan, img_size) -> str:
+def to_prompt(scan, img_size: tuple[int, int]) -> str:
     # Convert ocr bboxes to latin boxes
     w, h = img_size
-    texts = [x["text"] for x in scan]
-    boxes = [x["bbox"] for x in scan]
+    texts = [x.text or "" for x in scan]
     boxes = [
-        [int(b.TLx * w), int(b.TLy * h), int(b.BRx * w), int(b.BRy * h)] for b in boxes
+        [int(b.TLx * w), int(b.TLy * h), int(b.BRx * w), int(b.BRy * h)] for b in scan
     ]
 
     # Now continue with the latin prompting from https://github.dev/WenjinW/LATIN-Prompt
