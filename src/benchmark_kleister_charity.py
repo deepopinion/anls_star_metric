@@ -90,7 +90,7 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(10) 
+semaphore = asyncio.Semaphore(7) 
 async def evaluate_sample(sample):
     # This semaphore limits the memory consumption as we not load all images at once.
     async with semaphore:

@@ -78,7 +78,7 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(10) 
+semaphore = asyncio.Semaphore(7) 
 async def evaluate_sample(sample):
     async with semaphore:
         try:

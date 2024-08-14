@@ -1,3 +1,4 @@
+from utils.json_parser import JsonParser
 from utils.misc import (
     ainvoke_die,
     ainvoke_vqa,
@@ -5,6 +6,7 @@ from utils.misc import (
 )
 
 __all__ = [
+    "JsonParser",
     "ainvoke_die",
     "ainvoke_vqa",
     "log_result",

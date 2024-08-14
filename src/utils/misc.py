@@ -10,18 +10,25 @@ import json
 from io import BytesIO
 from PIL import Image
 
+from google.auth import default, transport
+
 from langchain.pydantic_v1 import BaseModel
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage
 
+
 from langchain_openai import ChatOpenAI
-from langchain_google_vertexai import ChatVertexAI, HarmCategory, HarmBlockThreshold
+from langchain_google_vertexai import (
+    ChatVertexAI, 
+    HarmCategory, 
+    HarmBlockThreshold,
+)
+
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_anthropic import ChatAnthropic
 
-from utils import vision
-from utils import latin
+from utils import vision, latin, JsonParser
 
 try:
     from utils import sft
@@ -86,6 +93,7 @@ def create_llm(*, model:str):
             convert_system_message_to_human=True, # This parameter is still not working -- if its used an exception is raised
             **settings,
         )
+                
     elif provider == "mistral":
         endpoint = os.environ.get("MISTRAL_ENDPOINT")
         api_key = os.environ.get("MISTRAL_API_KEY")
@@ -100,6 +108,21 @@ def create_llm(*, model:str):
             model_name=model, 
             **settings,
         )
+    
+    elif provider == "model_garden":
+        credentials, _ = default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
+        auth_request = transport.requests.Request()
+        credentials.refresh(auth_request)
+
+        PROJECT_ID = os.environ.get("VERTEXAI_PROJECT_ID")
+        MODEL_LOCATION = "us-central1"
+
+        llm = ChatOpenAI(
+            model=model,
+            base_url=f"https://{MODEL_LOCATION}-aiplatform.googleapis.com/v1beta1/projects/{PROJECT_ID}/locations/{MODEL_LOCATION}/endpoints/openapi/chat/completions?",
+            api_key=credentials.token,
+        )
+        return llm
 
     raise Exception(f"Unknown provider: {provider}")
 
@@ -121,8 +144,8 @@ def get_provider(model:str):
         return "mistral"
     elif model.startswith("claude"):
         return "anthropic"
-    
-    raise Exception(f"Unknown model: {model}")
+    else:
+        return "model_garden" # We use the model garden otherwise
 
 
 def sys_message(model:str):
@@ -131,7 +154,7 @@ def sys_message(model:str):
     Therefore we convert it manually.
     """
     provider = get_provider(model)
-    return "user" if provider == "vertexai" else "system"
+    return "user" if provider in ["vertexai", "model_garden"] else "system"
 
 def requires_human_message(model:str):
     provider = get_provider(model)
@@ -267,7 +290,8 @@ async def ainvoke_die(benchmark:str, model:str, method:str, pydantic_object:Base
     llm = create_llm(model=model)
     die_prompt = create_die_prompt(benchmark, model, method, images)
     prompt = ChatPromptTemplate.from_messages(die_prompt)
-    chain = prompt | llm | parser
+    json_parser = JsonParser()
+    chain = prompt | llm | json_parser | parser
 
     # Inference model a single time
     async def _invoke():
@@ -344,8 +368,10 @@ async def ainvoke_vqa(benchmark:str, model:str, method:str, question: str, image
         output = await retry_invoke(_invoke)
 
     # Return answer
-    write_cache(benchmark, model, method, images, output.content)
     output = output.content
+    output = output.replace("\\n", "\n")
+
+    write_cache(benchmark, model, method, images, output)
     return output
 
 

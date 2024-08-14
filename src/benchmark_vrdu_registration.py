@@ -75,7 +75,7 @@ def load_dataset():
         samples.append((item["filename"], kv))
     return samples
 
-semaphore = asyncio.Semaphore(10)
+semaphore = asyncio.Semaphore(7)
 async def evaluate_sample(ds, idx):
     async with semaphore:
         sample = ds[idx]
