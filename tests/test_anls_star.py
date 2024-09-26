@@ -502,11 +502,16 @@ def test_empty_response_penalizes_FNs_only():
         "effective_date": None,
         "term": None,
     }
+    expexted_closest_gt = {
+        "jurisdiction": None,
+        "party": None,
+    }
+
     anls, closest_gt = anls_score(gt, answer, return_gt=True)
 
     assert anls == approx(0.5)
-    assert closest_gt == gt
-    assert list(closest_gt.keys()) == list(gt.keys())
+    assert closest_gt == expexted_closest_gt
+    assert list(closest_gt.keys()) == list(expexted_closest_gt.keys())
 
 
 def test_missing_key_is_interpreted_as_none():
@@ -517,11 +522,14 @@ def test_missing_key_is_interpreted_as_none():
         "name": "david",
         "company": None,
     }
+    expected_closest_gt = {
+        "name": "david",
+    }
     anls, closest_gt = anls_score(gt, answer, return_gt=True)
 
     assert anls == approx(1.0)
-    assert closest_gt == gt
-    assert list(closest_gt.keys()) == list(gt.keys())
+    assert closest_gt == expected_closest_gt
+    assert list(closest_gt.keys()) == list(expected_closest_gt.keys())
 
 
 #
@@ -685,6 +693,15 @@ def test_answer_dict_with_additional_nones_is_ignored():
 
     anls = anls_score(gt, answer)
     assert anls == approx(0.0)
+
+
+def test_none_ground_truth():
+    gt = {"a": None}
+    pred = {}
+
+    score, gt = anls_score(gt, pred, return_gt=True)
+    assert score == 1.0
+    assert gt == {}
 
 
 #
