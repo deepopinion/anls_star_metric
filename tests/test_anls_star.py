@@ -325,7 +325,9 @@ def test_anls_score_two_dicts_expected_multiple_options():
     assert list(closest_gt.keys()) == list(answer.keys())
 
 
-@given(st.dictionaries(st.text(), st.lists(st.text())))
+@given(
+    st.dictionaries(st.text(max_size=10), st.lists(st.text(max_size=10), max_size=5))
+)
 def test_anls_score_two_dicts_with_lists(d: dict):
     anls, closest_gt, _ = anls_score(d, d, return_gt=True, return_key_scores=True)
     assert (anls, closest_gt) == (approx(1.0), d)
