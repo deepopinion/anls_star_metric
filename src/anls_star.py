@@ -13,7 +13,7 @@ import warnings
 from typing import Any, Literal, Union, overload, cast
 
 from munkres import Munkres, make_cost_matrix
-import key_scores_utils as ksu
+from . import key_scores_utils as ksu
 
 
 class ANLSTree(abc.ABC):
