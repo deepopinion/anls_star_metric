@@ -342,7 +342,10 @@ class ANLSDict(ANLSTree):
                 other_value, new_key_hierarchy, []
             )
             nlss.extend(nls_list)
-            chosen_gts[k] = chosen_gt
+
+            closest_gt_is_no_key = ANLSNone.check_if_none(chosen_gt) and k not in other.tree
+            if not closest_gt_is_no_key:
+                chosen_gts[k] = chosen_gt
 
             length = self_value.pairwise_len(other_value)
             mean_nls = sum(nls_list) / length if length > 0 else 1.0
