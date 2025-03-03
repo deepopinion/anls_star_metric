@@ -45,7 +45,7 @@ async def doc_to_prompt(img:Any, method:str) -> str:
     scan = await asyncio.to_thread(ocr_scanner.ocr, img)
 
     if method == "simple":
-        return " ".join([x.text or "" for x in scan])
+        return " ".join([x["text"] or "" for x in scan])
     elif method == "latin":
         return latin.to_prompt(scan, img.size)
     elif method in ["sft", "vision"]:
