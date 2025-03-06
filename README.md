@@ -1,5 +1,7 @@
 # ANLS ★
 **🌟 A Universal Metric for Generative Large Language Models 🌟**
+*Now with benchmarks for gpt-4.5 preview as well as claude-37 and llama-3.1-405B*
+
 
 <div align="center">
 
@@ -16,6 +18,7 @@
         archivePrefix={arXiv},
         primaryClass={cs.CL}
     }
+
 
 ## How to use the ANLS* score?
 1. `pip install anls_star`
