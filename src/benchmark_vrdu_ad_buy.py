@@ -3,19 +3,21 @@ import sys
 import os
 import random
 import asyncio
-import tqdm.asyncio
 import json
 from pdf2image import convert_from_path
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 import utils
 from anls_star import anls_score
+from do_label_definitions import LabelDefinition
 
 #
 # Configurable settings
 #
 MODEL = sys.argv[1]  # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin or sft
+DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin, sft, ucn
 
 #
 # Fixed Benchmark Settings
@@ -90,6 +92,100 @@ class ModelOutput(BaseModel):
     )
 
 
+ucn_label_definitions = [
+    LabelDefinition(
+        name="advertiser",
+        description="The name of the campaign that is buying the ad.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="agency",
+        description="The agency buying the ad. May be the same as the advertiser, but often is a media buying agency.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="contract_num",
+        description="The contract number/id for the order.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="property",
+        description="The TV station where the ad will run.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="gross_amount",
+        description="Total amount billed on the order.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="product",
+        description="The product being advertised.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="tv_address",
+        description="Address of the TV station running the ad.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="flight_from",
+        description="The start date of the ad campaign. Keep the format as found in the document.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="flight_to",
+        description="The end date of the ad campaign. Keep the format as found in the document.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="line_items",
+        description="The individual line items that make up the order.",
+        is_list=True,
+        sub=[
+            LabelDefinition(
+                name="channel",
+                description="TV channel the ad will run on.",
+                datatype="string",
+                is_list=False
+            ),
+            LabelDefinition(
+                name="program_desc",
+                description="Description of the program the ad will run on.",
+                datatype="string",
+                is_list=False
+            ),
+            LabelDefinition(
+                name="sub_amount",
+                description="Price of this line item.",
+                datatype="string",
+                is_list=False
+            ),
+            LabelDefinition(
+                name="program_start_date",
+                description="Start date of the ad on this line item. Keep the format as found in the document.",
+                datatype="string",
+                is_list=False
+            ),
+            LabelDefinition(
+                name="program_end_date",
+                description="End date of the ad on this line item. Keep the format as found in the document.",
+                datatype="string",
+                is_list=False
+            )
+        ]
+    )
+]
+
 def load_dataset():
     with gzip.open(os.path.join(GITHUB_REPO_PATH, "dataset.jsonl.gz"), "rt") as f:
         data = [json.loads(line) for line in f.readlines()]
@@ -123,7 +219,7 @@ def load_dataset():
     return samples
 
 semaphore = asyncio.Semaphore(7)
-async def evaluate_sample(ds, idx):
+async def evaluate_sample(ds, idx, method):
     async with semaphore:
         sample = ds[idx]
         try:
@@ -131,14 +227,22 @@ async def evaluate_sample(ds, idx):
             label = sample[1]
 
             file_path = os.path.join(GITHUB_REPO_PATH, "pdfs/", file_name)
-            images = await asyncio.to_thread(convert_from_path, file_path)
-            output = await utils.ainvoke_die(
-                benchmark="vrdu_ad_buy",
-                model=MODEL,
-                method=DOC_PROMPT_METHOD,
-                pydantic_object=ModelOutput,
-                images=images,
-            )
+            if method == "ucn":
+                output = await utils.ainvoke_ucn_die(
+                    benchmark="vrdu_ad_buy",
+                    model=MODEL,
+                    label_definitions=ucn_label_definitions,
+                    document_path=file_path
+                )
+            else:
+                images = await asyncio.to_thread(convert_from_path, file_path)
+                output = await utils.ainvoke_die(
+                    benchmark="vrdu_ad_buy",
+                    model=MODEL,
+                    method=DOC_PROMPT_METHOD,
+                    pydantic_object=ModelOutput,
+                    images=images,
+                )
 
             anls = anls_score(label, output)
             return anls
@@ -148,6 +252,7 @@ async def evaluate_sample(ds, idx):
 
 
 async def main():
+    console = Console()
     ds = load_dataset()
 
     idxs = list(range(len(ds)))
@@ -156,17 +261,29 @@ async def main():
     # Run evaluation in parallel
     awaitables = []
     for sample_idx in idxs[:TEST_SIZE]:
-        awaitables.append(evaluate_sample(ds, sample_idx))
+        awaitables.append(evaluate_sample(ds, sample_idx, DOC_PROMPT_METHOD))
 
     anlss = []
-    for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
-        anls = await awaitable
-        if anls is not None:
-            anlss.append(anls)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console
+    ) as progress:
+        task = progress.add_task(f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}...", total=TEST_SIZE)
+        
+        for awaitable in asyncio.as_completed(awaitables):
+            anls = await awaitable
+            if anls is not None:
+                anlss.append(anls)
+                current_anls = sum(anlss)/len(anlss)
+                progress.update(task, advance=1, description=f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}... [green]ANLS*: {current_anls:.3f}")
 
-        tqdm.tqdm.write(
-            f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}"
-        )
+    console.print("\n[bold green]Final Results:[/bold green]")
+    console.print(f"Model: [cyan]{MODEL}[/cyan]")
+    console.print(f"Method: [cyan]{DOC_PROMPT_METHOD}[/cyan]")
+    console.print(f"ANLS*: [bold green]{sum(anlss)/len(anlss):.3f}[/bold green]")
 
     utils.log_result(
         "VRDU AdBuy",

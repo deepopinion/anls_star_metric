@@ -3,7 +3,7 @@
 pytest
 numpy
 hypothesis
-git+https://github.com/deepopinion/ocr_wrapper@v0.2.1
+ocr_wrapper
 tqdm
 langchain
 langchain-openai
@@ -15,3 +15,4 @@ pydantic
 google-cloud-vision
 hypothesis
 twine
+rich

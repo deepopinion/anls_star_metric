@@ -3,18 +3,20 @@ import sys
 import os
 import random
 import asyncio
-import tqdm.asyncio
 from pdf2image import convert_from_path
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 import utils
 from anls_star import anls_score
+from do_label_definitions import LabelDefinition
 
 #
 # Configurable settings
 #
 MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+DOC_PROMPT_METHOD = sys.argv[2] # simple, latin, sft, ucn
 
 #
 # Fixed Benchmark Settings
@@ -54,6 +56,32 @@ class ModelOutput(BaseModel):
         description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!"
     )
 
+ucn_label_definitions = [
+    LabelDefinition(
+        name="effective_date",
+        description="Date in YYYY-MM-DD format, at which point the contract is legally binding. Only one is correct!",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="jurisdiction",
+        description="Under which state or country jurisdiction is the contract signed. Use the short name, e.g. 'Illinois' instead of 'State of Illinois', Only one is correct!",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="party",
+        description="Signing counterparty of the contract. Not the party issuing the contract. Format: Replace whitespaces with '_'.",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="term",
+        description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!",
+        datatype="string",
+        is_list=False
+    )
+]
 
 def load_dataset():
     in_xz_file = os.path.join(GITHUB_REPO_PATH, "train/in.tsv.xz")
@@ -79,13 +107,21 @@ def load_dataset():
 # Evaluate a single sample
 #
 semaphore = asyncio.Semaphore(7) 
-async def evaluate_sample(sample):
+async def evaluate_sample(sample, method):
     async with semaphore:
         try:
             file_name = sample[0]
             label = sample[1]
             
             file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
+            if method == "ucn":
+                output = await utils.ainvoke_ucn_die(
+                    benchmark="kleister_nda",
+                    model=MODEL, 
+                    label_definitions=ucn_label_definitions,
+                    document_path=file_path
+                )
+            else:
             images = await asyncio.to_thread(convert_from_path, file_path)
             output = await utils.ainvoke_die(
                 benchmark="kleister_nda",
@@ -106,6 +142,7 @@ async def evaluate_sample(sample):
 # MAIN
 #
 async def main():
+    console = Console()
     ds = load_dataset()
 
     # Shuffle dataset and take top n
@@ -115,13 +152,29 @@ async def main():
     # Run evaluation in parallel
     awaitables = []
     for sample in ds[:TEST_SIZE]:
-        awaitables.append(evaluate_sample(sample))
+        awaitables.append(evaluate_sample(sample, DOC_PROMPT_METHOD))
 
     anlss = []
-    for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
-        anlss.append(await awaitable)
-        anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console
+    ) as progress:
+        task = progress.add_task(f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}...", total=TEST_SIZE)
+        
+        for awaitable in asyncio.as_completed(awaitables):
+            anls = await awaitable
+            if anls is not None:
+                anlss.append(anls)
+                current_anls = sum(anlss)/len(anlss)
+                progress.update(task, advance=1, description=f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}... [green]ANLS*: {current_anls:.3f}")
+
+    console.print("\n[bold green]Final Results:[/bold green]")
+    console.print(f"Model: [cyan]{MODEL}[/cyan]")
+    console.print(f"Method: [cyan]{DOC_PROMPT_METHOD}[/cyan]")
+    console.print(f"ANLS*: [bold green]{sum(anlss)/len(anlss):.3f}[/bold green]")
 
     utils.log_result(
         "Kleister NDA",

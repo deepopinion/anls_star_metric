@@ -3,18 +3,20 @@ import sys
 import os
 import random
 import asyncio
-import tqdm.asyncio
 from pdf2image import convert_from_path
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 import utils
 from anls_star import anls_score
+from do_label_definitions import LabelDefinition
 
 #
 # Configurable settings
 #
 MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+DOC_PROMPT_METHOD = sys.argv[2] # simple, latin, sft, ucn
 
 #
 # Fixed Benchmark Settings
@@ -67,6 +69,57 @@ class ModelOutput(BaseModel):
         description="the annual spending in British Pounds of the charitable organization. Only one is correct! Convert to float."
     )
 
+ucn_label_definitions = [
+    LabelDefinition(
+        name="address__post_town",
+        description="post town of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _).",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="address__postcode",
+        description="postcode of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _)",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="address__street_line",
+        description="street line of the address of the charitable organization. Only one is correct!",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="charity_name",
+        description="the name of the charitable organization. Only one is correct! (in upper-case letters separated with _)",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="charity_number",
+        description="the registered number of the charitable organization. Only one is correct!",
+        datatype="number",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="income_annually_in_british_pounds",
+        description="the annual income in British Pounds of the charitable organization. Only one is correct! Convert to float.",
+        datatype="number",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="report_date",
+        description="the reporting date of the annual document of the charitable organization. Only one is correct! Represent the date as YYYY-MM-DD",
+        datatype="string",
+        is_list=False
+    ),
+    LabelDefinition(
+        name="spending_annually_in_british_pounds",
+        description="the annual spending in British Pounds of the charitable organization. Only one is correct! Convert to float.",
+        datatype="number",
+        is_list=False
+    )
+]
+
 def load_dataset():
     in_xz_file = os.path.join(GITHUB_REPO_PATH, "train/in.tsv.xz")
     in_data = lzma.open(in_xz_file).readlines()
@@ -91,7 +144,7 @@ def load_dataset():
 # Evaluate a single sample
 #
 semaphore = asyncio.Semaphore(7) 
-async def evaluate_sample(sample):
+async def evaluate_sample(sample, method):
     # This semaphore limits the memory consumption as we not load all images at once.
     async with semaphore:
         try:
@@ -99,14 +152,22 @@ async def evaluate_sample(sample):
             label = sample[1]
             
             file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
-            images = await asyncio.to_thread(convert_from_path, file_path)
-            output = await utils.ainvoke_die(
-                benchmark="kleister_charity",
-                model=MODEL, 
-                method=DOC_PROMPT_METHOD, 
-                pydantic_object=ModelOutput, 
-                images=images,
-            )
+            if method == "ucn":
+                output = await utils.ainvoke_ucn_die(
+                    benchmark="kleister_charity",
+                    model=MODEL, 
+                    label_definitions=ucn_label_definitions,
+                    document_path=file_path
+                )
+            else:
+                images = await asyncio.to_thread(convert_from_path, file_path)
+                output = await utils.ainvoke_die(
+                    benchmark="kleister_charity",
+                    model=MODEL, 
+                    method=DOC_PROMPT_METHOD, 
+                    pydantic_object=ModelOutput, 
+                    images=images,
+                )
 
             anls = anls_score(label, output)
             return anls
@@ -119,6 +180,7 @@ async def evaluate_sample(sample):
 # MAIN
 #
 async def main():
+    console = Console()
     ds = load_dataset()
 
     # Shuffle dataset and take top n
@@ -128,13 +190,29 @@ async def main():
     # Run evaluation in parallel
     awaitables = []
     for sample in ds[:TEST_SIZE]:
-        awaitables.append(evaluate_sample(sample))
+        awaitables.append(evaluate_sample(sample, DOC_PROMPT_METHOD))
 
     anlss = []
-    for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
-        anlss.append(await awaitable)
-        anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console
+    ) as progress:
+        task = progress.add_task(f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}...", total=TEST_SIZE)
+        
+        for awaitable in asyncio.as_completed(awaitables):
+            anls = await awaitable
+            if anls is not None:
+                anlss.append(anls)
+                current_anls = sum(anlss)/len(anlss)
+                progress.update(task, advance=1, description=f"[cyan]Evaluating {MODEL} with {DOC_PROMPT_METHOD}... [green]ANLS*: {current_anls:.3f}")
+
+    console.print("\n[bold green]Final Results:[/bold green]")
+    console.print(f"Model: [cyan]{MODEL}[/cyan]")
+    console.print(f"Method: [cyan]{DOC_PROMPT_METHOD}[/cyan]")
+    console.print(f"ANLS*: [bold green]{sum(anlss)/len(anlss):.3f}[/bold green]")
 
     utils.log_result(
         "Kleister Charity",
