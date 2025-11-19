@@ -35,7 +35,7 @@ if not os.path.exists(GITHUB_REPO_PATH):
 # Dataset
 #
 class ModelOutput(BaseModel):
-    file_date: str | None = Field(default=None, description="Date the registraion was field. ")
+    file_date: str | None = Field(default=None, description="Date the registration was filed. ")
     foreign_principle_name: str | None = Field(default=None, description="Name of the foreign principal registering.")
     registrant_name: str | None = Field(default=None, description="Name of the registrant.")
     registration_num: str | None = Field(default=None, description="Number/ID of the registration")
