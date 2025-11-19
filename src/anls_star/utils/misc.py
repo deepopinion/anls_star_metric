@@ -51,7 +51,7 @@ async def doc_to_prompt(img:Any, method:str) -> str:
     elif method in ["sft", "vision"]:
         if sft is None:
             raise Exception(
-                "Please install the sft package from DeepOpinion in order to use the sft prompting method."
+                "Please install the sft package from Otera in order to use the sft prompting method."
             )
 
         return sft.to_prompt(scan, img)

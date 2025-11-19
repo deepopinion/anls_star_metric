@@ -1,8 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-
 [project]
 name = "anls_star"
 version = "0.0.12"
@@ -21,23 +16,30 @@ dependencies = [
     "munkres",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/"]
+[project.urls]
+Repository = "https://github.com/deepopinion/anls_star_metric"
+Issues = "https://github.com/deepopinion/anls_star_metric/issues"
+Paper = "https://arxiv.org/abs/2402.03848"
+Otera = "https://otera.ai"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/*.py",
+  "/src/anls_star/*.py",
   "/tests",
 ]
 exclude = [
-    "src/benchmark*",
+    "/src/anls_star/benchmark*",
 ]
 
 [tool.hatch.build.targets.wheel.sources]
 "src" = "anls_star"
 
-[project.urls]
-Repository = "https://github.com/deepopinion/anls_star_metric"
-Issues = "https://github.com/deepopinion/anls_star_metric/issues"
-Paper = "https://arxiv.org/abs/2402.03848"
-DeepOpinion = "https://deepopinion.ai"
+[dependency-groups]
+test = [
+    "hypothesis>=6.141.1",
+    "pytest>=8.4.2",
+]

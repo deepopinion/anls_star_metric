@@ -4,7 +4,7 @@ Paper: ANLS* - A Universal Document Processing Metric for Generative Large Langu
 Authors: David Peer, Philemon Schöpf, Volckmar Nebendahl, Alexander Rietzler, Sebastian Stabinger
 Link: ToDo
 
-DeepOpinion, 2024
+Otera, 2025
 """
 
 import abc
