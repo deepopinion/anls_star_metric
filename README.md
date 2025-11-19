@@ -148,14 +148,13 @@ The following table shows the ANLS* score for the different models and prompt me
  - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT` (Azure)
  - Anthropic: Setup the `ANTHROPIC_API_KEY` env variable
 3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script. For example:
+4. Execute the corresponding benchmark script (additional packages need to be installed). For example:
 
 ```bash
     python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
 ```
 
 Note that we always benchmark the latest version of each model and report those values in the table above. In the paper, we additionally report the performance of intermediate versions of each model such as `gpt-4-1106-preview` and `gpt-4-turbo-2024-04-09`.
-
 
 The following prompt methods are supported:
 - `simple` - Simple text concatenation after OCR with GooleOCR
