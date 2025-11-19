@@ -36,17 +36,17 @@ if not os.path.exists(GITHUB_REPO_PATH):
 class ModelOutput(BaseModel):
     company: str | None = Field(
         default=None,
-        description="Name of the company that issued the reciept. Only one is correct! Format in upper-case letters.",
+        description="Name of the company that issued the receipt. Only one is correct! Format in upper-case letters.",
     )
 
     date: str | None = Field(
         default=None,
-        description="Date the reciept was issued. Only one is correct! Format it as found on the reciept.",
+        description="Date the receipt was issued. Only one is correct! Format it as found on the receipt.",
     )
 
     address: str | None = Field(
         default=None,
-        description="Address of the company that issued the reciept. Format in upper-case letters and separate information found on different lines with ','.",
+        description="Address of the company that issued the receipt. Format in upper-case letters and separate information found on different lines with ','.",
     )
 
     total: str | None = Field(
