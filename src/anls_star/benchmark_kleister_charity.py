@@ -13,8 +13,8 @@ from anls_star import anls_score
 #
 # Configurable settings
 #
-MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+MODEL = sys.argv[1]  # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
+DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin or sft
 
 #
 # Fixed Benchmark Settings
@@ -36,36 +36,37 @@ if not os.path.exists(GITHUB_REPO_PATH):
 class ModelOutput(BaseModel):
     address__post_town: str | None = Field(
         default=None,
-        description="post town of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _)."
+        description="post town of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _).",
     )
     address__postcode: str | None = Field(
         default=None,
-        description="postcode of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _)"
+        description="postcode of the address of the charitable organization. Only one is correct! (in upper-case letters separated with _)",
     )
     address__street_line: str | None = Field(
         default=None,
-        description="street line of the address of the charitable organization. Only one is correct!"
+        description="street line of the address of the charitable organization. Only one is correct!",
     )
     charity_name: str | None = Field(
         default=None,
-        description="the name of the charitable organization. Only one is correct! (in upper-case letters separated with _)"
+        description="the name of the charitable organization. Only one is correct! (in upper-case letters separated with _)",
     )
     charity_number: int | None = Field(
         default=None,
-        description="the registered number of the charitable organization. Only one is correct!"
+        description="the registered number of the charitable organization. Only one is correct!",
     )
     income_annually_in_british_pounds: float | None = Field(
         default=None,
-        description="the annual income in British Pounds of the charitable organization. Only one is correct! Convert to float."
+        description="the annual income in British Pounds of the charitable organization. Only one is correct! Convert to float.",
     )
     report_date: str | None = Field(
         default=None,
-        description="the reporting date of the annual document of the charitable organization. Only one is correct! Represent the date as YYYY-MM-DD"
+        description="the reporting date of the annual document of the charitable organization. Only one is correct! Represent the date as YYYY-MM-DD",
     )
     spending_annually_in_british_pounds: float | None = Field(
         default=None,
-        description="the annual spending in British Pounds of the charitable organization. Only one is correct! Convert to float."
+        description="the annual spending in British Pounds of the charitable organization. Only one is correct! Convert to float.",
     )
+
 
 def load_dataset():
     in_xz_file = os.path.join(GITHUB_REPO_PATH, "train/in.tsv.xz")
@@ -78,7 +79,7 @@ def load_dataset():
         expected = fp.read().split("\n")
         expected = [line for line in expected if line]
         for i, sample in enumerate(expected):
-            expected[i] = {x.split("=")[0]: x.split("=")[1] for x in sample.split(" ")}       
+            expected[i] = {x.split("=")[0]: x.split("=")[1] for x in sample.split(" ")}
 
     # Ensure correctness of the dataset
     assert len(expected) == len(file_names)
@@ -90,21 +91,23 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(7) 
+semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(sample):
     # This semaphore limits the memory consumption as we not load all images at once.
     async with semaphore:
         try:
             file_name = sample[0]
             label = sample[1]
-            
+
             file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
             images = await asyncio.to_thread(convert_from_path, file_path)
             output = await utils.ainvoke_die(
                 benchmark="kleister_charity",
-                model=MODEL, 
-                method=DOC_PROMPT_METHOD, 
-                pydantic_object=ModelOutput, 
+                model=MODEL,
+                method=DOC_PROMPT_METHOD,
+                pydantic_object=ModelOutput,
                 images=images,
             )
 
@@ -134,12 +137,12 @@ async def main():
     for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
         anlss.append(await awaitable)
         anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "Kleister Charity",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
 

@@ -12,8 +12,8 @@ from anls_star import anls_score
 #
 # Configurable settings
 #
-MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+MODEL = sys.argv[1]  # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
+DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin or sft
 
 #
 # Fixed Benchmark Settings
@@ -25,15 +25,15 @@ random.seed(42)
 # Check availability of dataset
 val_json_file = os.path.join(DATASET_PATH, "labels", "val.json")
 if not os.path.exists(val_json_file):
-    print(
-        "Please download the dataset from https://rrc.cvc.uab.es/?ch=17&com=introduction first."
-    )
+    print("Please download the dataset from https://rrc.cvc.uab.es/?ch=17&com=introduction first.")
     exit()
 
 #
 # Evaluate a single sample
 #
 semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(sample):
     async with semaphore:
         try:
@@ -51,7 +51,7 @@ async def evaluate_sample(sample):
                 model=MODEL,
                 method=DOC_PROMPT_METHOD,
                 question=question,
-                images=images            
+                images=images,
             )
 
             anls = anls_score(answers, answer)
@@ -80,14 +80,15 @@ async def main():
     for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
         anlss.append(await awaitable)
         anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "MPDocVQA",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

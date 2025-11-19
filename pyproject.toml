@@ -22,6 +22,16 @@ dependencies = [
     "munkres>=1.1.0",
 ]
 
+[dependency-groups]
+dev = [
+    {include-group = "test"},
+]
+
+test = [
+    "hypothesis>=6.141.1",
+    "pytest>=8.4.2",
+]
+
 [project.urls]
 Repository = "https://github.com/deepopinion/anls_star_metric"
 Issues = "https://github.com/deepopinion/anls_star_metric/issues"
@@ -44,12 +54,5 @@ exclude = [
 [tool.hatch.build.targets.wheel.sources]
 "src" = "anls_star"
 
-[dependency-groups]
-dev = [
-    {include-group = "test"},
-]
-
-test = [
-    "hypothesis>=6.141.1",
-    "pytest>=8.4.2",
-]
+[tool.ruff]
+line-length = 120

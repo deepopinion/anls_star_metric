@@ -9,7 +9,7 @@ class ScoreNode:
 
 
 def construct_nested_dict(
-    list_of_dicts: list[dict[tuple[str, ...], float]]
+    list_of_dicts: list[dict[tuple[str, ...], float]],
 ) -> dict[str, ScoreNode]:
     """Construct a nested dictionary from a list of dictionaries with nested keys.
 
@@ -68,7 +68,7 @@ def construct_nested_dict(
 
 
 def merge_and_calculate_mean(
-    list_of_dicts: list[dict[tuple[str, ...], float]]
+    list_of_dicts: list[dict[tuple[str, ...], float]],
 ) -> list[dict[tuple[str, ...], float]]:
     """
     Merges a list of dictionaries and calculates the mean of values for each key.

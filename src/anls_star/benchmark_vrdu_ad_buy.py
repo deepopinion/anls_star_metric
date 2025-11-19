@@ -26,9 +26,7 @@ random.seed(42)
 
 # Check availability of dataset
 if not os.path.exists(GITHUB_REPO_PATH):
-    print(
-        "Please download the dataset from https://github.com/google-research-datasets/vrdu first."
-    )
+    print("Please download the dataset from https://github.com/google-research-datasets/vrdu first.")
     exit()
 
 
@@ -36,12 +34,8 @@ if not os.path.exists(GITHUB_REPO_PATH):
 # Dataset
 #
 class LineItem(BaseModel):
-    channel: str | None = Field(
-        default=None, description="TV channel the ad will run on."
-    )
-    program_desc: str | None = Field(
-        default=None, description="Description of the program the ad will run on."
-    )
+    channel: str | None = Field(default=None, description="TV channel the ad will run on.")
+    program_desc: str | None = Field(default=None, description="Description of the program the ad will run on.")
     sub_amount: str | None = Field(default=None, description="Price of this line item.")
     program_start_date: str | None = Field(
         default=None,
@@ -54,28 +48,16 @@ class LineItem(BaseModel):
 
 
 class ModelOutput(BaseModel):
-    advertiser: str | None = Field(
-        default=None, description="The name of the campaign that is buying the ad."
-    )
+    advertiser: str | None = Field(default=None, description="The name of the campaign that is buying the ad.")
     agency: str | None = Field(
         default=None,
         description="The agency buying the ad. May be the same as the advertiser, but often is a media buying agency.",
     )
-    contract_num: str | None = Field(
-        default=None, description="The contract number/id for the order."
-    )
-    property: str | None = Field(
-        default=None, description="The TV station where the ad will run."
-    )
-    gross_amount: str | None = Field(
-        default=None, description="Total amount billed on the order."
-    )
-    product: str | None = Field(
-        default=None, description="The product being advertised."
-    )
-    tv_address: str | None = Field(
-        default=None, description="Address of the TV station running the ad."
-    )
+    contract_num: str | None = Field(default=None, description="The contract number/id for the order.")
+    property: str | None = Field(default=None, description="The TV station where the ad will run.")
+    gross_amount: str | None = Field(default=None, description="Total amount billed on the order.")
+    product: str | None = Field(default=None, description="The product being advertised.")
+    tv_address: str | None = Field(default=None, description="Address of the TV station running the ad.")
     flight_from: str | None = Field(
         default=None,
         description="The start date of the ad campaign. Keep the format as found in the document.",
@@ -122,7 +104,10 @@ def load_dataset():
         samples.append((item["filename"], kv))
     return samples
 
+
 semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(ds, idx):
     async with semaphore:
         sample = ds[idx]
@@ -164,16 +149,15 @@ async def main():
         if anls is not None:
             anlss.append(anls)
 
-        tqdm.tqdm.write(
-            f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}"
-        )
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "VRDU AdBuy",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

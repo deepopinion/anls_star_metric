@@ -27,9 +27,7 @@ random.seed(42)
 
 # Check availability of dataset
 if not os.path.exists(GITHUB_REPO_PATH):
-    print(
-        "Please download the dataset from https://github.com/google-research-datasets/vrdu first."
-    )
+    print("Please download the dataset from https://github.com/google-research-datasets/vrdu first.")
     exit()
 
 
@@ -37,24 +35,12 @@ if not os.path.exists(GITHUB_REPO_PATH):
 # Dataset
 #
 class ModelOutput(BaseModel):
-    file_date: str | None = Field(
-        default=None, description="Date the registraion was field. "
-    )
-    foreign_principle_name: str | None = Field(
-        default=None, description="Name of the foreign principal registering."
-    )
-    registrant_name: str | None = Field(
-        default=None, description="Name of the registrant."
-    )
-    registration_num: str | None = Field(
-        default=None, description="Number/ID of the registration"
-    )
-    signer_name: str | None = Field(
-        default=None, description="Name of the person signing the registration."
-    )
-    signer_title: str | None = Field(
-        default=None, description="Title of the person signing the registration."
-    )
+    file_date: str | None = Field(default=None, description="Date the registraion was field. ")
+    foreign_principle_name: str | None = Field(default=None, description="Name of the foreign principal registering.")
+    registrant_name: str | None = Field(default=None, description="Name of the registrant.")
+    registration_num: str | None = Field(default=None, description="Number/ID of the registration")
+    signer_name: str | None = Field(default=None, description="Name of the person signing the registration.")
+    signer_title: str | None = Field(default=None, description="Title of the person signing the registration.")
 
 
 def load_dataset():
@@ -75,7 +61,10 @@ def load_dataset():
         samples.append((item["filename"], kv))
     return samples
 
+
 semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(ds, idx):
     async with semaphore:
         sample = ds[idx]
@@ -117,16 +106,15 @@ async def main():
         if anls is not None:
             anlss.append(anls)
 
-        tqdm.tqdm.write(
-            f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}"
-        )
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "VRDU Registration",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

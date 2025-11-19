@@ -37,9 +37,7 @@ def test_anls_cast_to_str(s):
 
 
 def test_anls_score_should_trim_whitespace():
-    anls, closest_gt, _ = anls_score(
-        "Test Hello ", " Test    Hello\n\n", return_gt=True, return_key_scores=True
-    )
+    anls, closest_gt, _ = anls_score("Test Hello ", " Test    Hello\n\n", return_gt=True, return_key_scores=True)
     assert anls == approx(1.0)
     assert closest_gt == "Test Hello "
 
@@ -66,9 +64,7 @@ def test_anls_score_single_answer(s):
 def test_anls_score_single_wrong_answer(s):
     gts = (s,)
     answer = "Hi there"
-    anls, closest_gt, _ = anls_score(
-        gts, answer, return_gt=True, return_key_scores=True
-    )
+    anls, closest_gt, _ = anls_score(gts, answer, return_gt=True, return_key_scores=True)
 
     assert anls == approx(0.0)
     assert closest_gt == s
@@ -124,9 +120,7 @@ def test_anls_tuple_with_empty_list_2():
 
 
 def test_anls_empty_tuple_should_fail():
-    with pytest.raises(
-        ValueError, match="Expected at least 1 valid ground truth option"
-    ):
+    with pytest.raises(ValueError, match="Expected at least 1 valid ground truth option"):
         ANLSTree.make_tree(tuple(), is_gt=True)
 
 
@@ -146,9 +140,7 @@ def test_anls_score_permuted_list(lst: list):
 
 @given(st.lists(st.text(), min_size=10, max_size=10))
 def test_anls_score_list_results_one_missing_at_end(lst: list):
-    anls, closest_gt, _ = anls_score(
-        lst, lst[:-1], return_gt=True, return_key_scores=True
-    )
+    anls, closest_gt, _ = anls_score(lst, lst[:-1], return_gt=True, return_key_scores=True)
     assert (anls, closest_gt) == (approx(0.9), lst)
 
 
@@ -156,9 +148,7 @@ def test_anls_score_list_results_one_missing_at_end(lst: list):
 def test_anls_score_list_results_one_missing_at_beginning(lst: list):
     """If an element is missing at the beginning, we expect it to appear at
     the end in the best-matching gt since non-matched items are moved back."""
-    anls, closest_gt, _ = anls_score(
-        lst, lst[1:], return_gt=True, return_key_scores=True
-    )
+    anls, closest_gt, _ = anls_score(lst, lst[1:], return_gt=True, return_key_scores=True)
     assert (anls, closest_gt) == (approx(0.9), lst[1:] + lst[:1])
 
 
@@ -326,9 +316,7 @@ def test_anls_score_two_dicts_expected_multiple_options():
     assert list(closest_gt.keys()) == list(answer.keys())
 
 
-@given(
-    st.dictionaries(st.text(max_size=10), st.lists(st.text(max_size=10), max_size=5))
-)
+@given(st.dictionaries(st.text(max_size=10), st.lists(st.text(max_size=10), max_size=5)))
 def test_anls_score_two_dicts_with_lists(d: dict):
     anls, closest_gt, _ = anls_score(d, d, return_gt=True, return_key_scores=True)
     assert (anls, closest_gt) == (approx(1.0), d)
@@ -444,9 +432,7 @@ def test_anls_more_missed_keys_should_lower_score():
 @given(
     st.recursive(
         st.none() | st.booleans() | st.text() | st.floats() | st.integers(),
-        lambda children: st.tuples(children)
-        | st.lists(children)
-        | st.dictionaries(st.text(), children),
+        lambda children: st.tuples(children) | st.lists(children) | st.dictionaries(st.text(), children),
         max_leaves=10,
     ).filter(has_tuple)
 )

@@ -12,7 +12,13 @@ def to_prompt(scan, img_size: tuple[int, int]) -> str:
     w, h = img_size
     texts = [x["text"] or "" for x in scan]
     boxes = [
-        [int(b["bbox"].TLx * w), int(b["bbox"].TLy * h), int(b["bbox"].BRx * w), int(b["bbox"].BRy * h)] for b in scan
+        [
+            int(b["bbox"].TLx * w),
+            int(b["bbox"].TLy * h),
+            int(b["bbox"].BRx * w),
+            int(b["bbox"].BRy * h),
+        ]
+        for b in scan
     ]
 
     # Now continue with the latin prompting from https://github.dev/WenjinW/LATIN-Prompt
@@ -64,12 +70,7 @@ def _is_same_line(box1, box2):
     box1_midy = (box1[1] + box1[3]) / 2
     box2_midy = (box2[1] + box2[3]) / 2
 
-    if (
-        box1_midy < box2[3]
-        and box1_midy > box2[1]
-        and box2_midy < box1[3]
-        and box2_midy > box1[1]
-    ):
+    if box1_midy < box2[3] and box1_midy > box2[1] and box2_midy < box1[3] and box2_midy > box1[1]:
         return True
     else:
         return False

@@ -13,8 +13,8 @@ from anls_star import anls_score
 #
 # Configurable settings
 #
-MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+MODEL = sys.argv[1]  # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
+DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin or sft
 
 
 #
@@ -32,32 +32,33 @@ if not os.path.exists(GITHUB_REPO_PATH):
 
 #
 # Dataset
-#  
+#
 class ModelOutput(BaseModel):
     company: str | None = Field(
         default=None,
-        description="Name of the company that issued the reciept. Only one is correct! Format in upper-case letters."
+        description="Name of the company that issued the reciept. Only one is correct! Format in upper-case letters.",
     )
 
     date: str | None = Field(
         default=None,
-        description="Date the reciept was issued. Only one is correct! Format it as found on the reciept."
+        description="Date the reciept was issued. Only one is correct! Format it as found on the reciept.",
     )
 
     address: str | None = Field(
         default=None,
-        description="Address of the company that issued the reciept. Format in upper-case letters and separate information found on different lines with ','."
+        description="Address of the company that issued the reciept. Format in upper-case letters and separate information found on different lines with ','.",
     )
 
     total: str | None = Field(
         default=None,
-        description="Total amount billed. Only one is correct! Format to 2 decimal places. Do not include currency symbol."
+        description="Total amount billed. Only one is correct! Format to 2 decimal places. Do not include currency symbol.",
     )
 
 
 #
 # MAIN
 #
+
 
 def load_dataset():
     # Load GTs for all images
@@ -68,18 +69,20 @@ def load_dataset():
 
     return gt
 
+
 semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(file_name, label):
     async with semaphore:
         try:
-            
             file_path = os.path.join(GITHUB_REPO_PATH, "img/", file_name)
-            img = Image.open(file_path)                
+            img = Image.open(file_path)
             output = await utils.ainvoke_die(
                 benchmark="sroie",
-                model=MODEL, 
-                method=DOC_PROMPT_METHOD, 
-                pydantic_object=ModelOutput, 
+                model=MODEL,
+                method=DOC_PROMPT_METHOD,
+                pydantic_object=ModelOutput,
                 images=img,
             )
 
@@ -88,7 +91,7 @@ async def evaluate_sample(file_name, label):
         except Exception as e:
             print("(ERROR) " + str(e))
             return 0.0
-            
+
 
 async def main():
     ds = load_dataset()
@@ -108,14 +111,15 @@ async def main():
     for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
         anlss.append(await awaitable)
         anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "SROIE",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())
