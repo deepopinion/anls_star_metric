@@ -1,4 +1,3 @@
-import json
 import re
 
 from langchain_core.runnables import Runnable
@@ -18,5 +17,5 @@ class JsonParser(Runnable):
             text = text.replace("```", "")
 
             return text
-        except Exception as e:
+        except Exception:
             raise

@@ -2,13 +2,10 @@ from copy import deepcopy
 import hashlib
 import asyncio
 import os
-import base64
 from typing import Any
 import time
 from ocr_wrapper import GoogleOCR
 import json
-from io import BytesIO
-from PIL import Image
 
 from google.auth import default, transport
 

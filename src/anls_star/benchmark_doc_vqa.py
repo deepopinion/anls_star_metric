@@ -5,7 +5,6 @@ import asyncio
 import tqdm.asyncio
 import json
 from PIL import Image
-from vertexai.generative_models._generative_models import ResponseBlockedError
 
 import utils
 from anls_star import anls_score
