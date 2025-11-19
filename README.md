@@ -161,7 +161,7 @@ gpt-4-turbo-2024-04-09.
 The following prompt methods are supported:
 - `simple` - Simple text concatenation after OCR with GooleOCR
 - `latin` - Method as introduced by [Wang et al.](https://arxiv.org/abs/2306.00526)
-- `sft` - DeepOpinion internal only
+- `sft` - Otera internal only
 - `vision` - If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
 
 5. The final ANLS* is shown on the console. 

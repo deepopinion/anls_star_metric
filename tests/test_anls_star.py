@@ -164,7 +164,7 @@ def test_anls_score_list_results_one_missing_at_beginning(lst: list):
 
 def test_anls_score_list_results_completely_off():
     answers = ["a", "b", "c"]
-    answer = ["what", "is", "deepopinion"]
+    answer = ["what", "is", "otera"]
     anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(0.0)
