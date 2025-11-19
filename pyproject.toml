@@ -39,6 +39,10 @@ exclude = [
 "src" = "anls_star"
 
 [dependency-groups]
+dev = [
+    {include-group = "test"},
+]
+
 test = [
     "hypothesis>=6.141.1",
     "pytest>=8.4.2",
