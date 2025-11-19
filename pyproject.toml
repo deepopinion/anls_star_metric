@@ -2,7 +2,7 @@
 name = "anls_star"
 version = "0.0.12"
 authors = [
-  { name="David Peer", email="david.peer@deepopinion.ai" },
+  { name="David Peer", email="david.peer@otera.ai" },
 ]
 description = "A universal metric for Generative Large Language Models (GLLMs)"
 readme = "README.md"
@@ -19,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "munkres",
+    "munkres>=1.1.0",
 ]
 
 [project.urls]
