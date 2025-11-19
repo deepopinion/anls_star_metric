@@ -13,8 +13,8 @@ from anls_star import anls_score
 #
 # Configurable settings
 #
-MODEL = sys.argv[1] # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
-DOC_PROMPT_METHOD = sys.argv[2] # simple, latin or sft
+MODEL = sys.argv[1]  # gpt-3.5-turbo-16k, gpt-4-1106-preview (= gpt4-turbo), gemini-pro
+DOC_PROMPT_METHOD = sys.argv[2]  # simple, latin or sft
 
 #
 # Fixed Benchmark Settings
@@ -32,26 +32,26 @@ if not os.path.exists(GITHUB_REPO_PATH):
 
 #
 # Dataset
-#  
+#
 class ModelOutput(BaseModel):
     effective_date: str | None = Field(
         default=None,
-        description="Date in YYYY-MM-DD format, at which point the contract is legally binding. Only one is correct!"
+        description="Date in YYYY-MM-DD format, at which point the contract is legally binding. Only one is correct!",
     )
 
     jurisdiction: str | None = Field(
         default=None,
-        description="Under which state or country jurisdiction is the contract signed. Use the short name, e.g. 'Illinois' instead of 'State of Illinois', Only one is correct!"
+        description="Under which state or country jurisdiction is the contract signed. Use the short name, e.g. 'Illinois' instead of 'State of Illinois', Only one is correct!",
     )
 
     party: str | None = Field(
         default=None,
-        description="Signing counterparty of the contract. Not the party issuing the contract. Format: Replace whitespaces with '_'."
+        description="Signing counterparty of the contract. Not the party issuing the contract. Format: Replace whitespaces with '_'.",
     )
 
     term: str | None = Field(
         default=None,
-        description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!"
+        description="Length of the legal contract as expressed in the document, e.g. '2_years'. Only one is correct!",
     )
 
 
@@ -66,7 +66,7 @@ def load_dataset():
         expected = fp.read().split("\n")
         expected = [line for line in expected if line]
         for i, sample in enumerate(expected):
-            expected[i] = {x.split("=")[0]: x.split("=")[1] for x in sample.split(" ")}       
+            expected[i] = {x.split("=")[0]: x.split("=")[1] for x in sample.split(" ")}
 
     # Ensure correctness of the dataset
     assert len(expected) == len(file_names)
@@ -78,20 +78,22 @@ def load_dataset():
 #
 # Evaluate a single sample
 #
-semaphore = asyncio.Semaphore(7) 
+semaphore = asyncio.Semaphore(7)
+
+
 async def evaluate_sample(sample):
     async with semaphore:
         try:
             file_name = sample[0]
             label = sample[1]
-            
+
             file_path = os.path.join(GITHUB_REPO_PATH, "documents/", file_name)
             images = await asyncio.to_thread(convert_from_path, file_path)
             output = await utils.ainvoke_die(
                 benchmark="kleister_nda",
-                model=MODEL, 
-                method=DOC_PROMPT_METHOD, 
-                pydantic_object=ModelOutput, 
+                model=MODEL,
+                method=DOC_PROMPT_METHOD,
+                pydantic_object=ModelOutput,
                 images=images,
             )
 
@@ -121,14 +123,15 @@ async def main():
     for awaitable in tqdm.asyncio.tqdm.as_completed(awaitables):
         anlss.append(await awaitable)
         anlss = [x for x in anlss if x is not None]
-        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss)/len(anlss), 3)}")
+        tqdm.tqdm.write(f"{MODEL} | {DOC_PROMPT_METHOD} | ANLS*: {round(sum(anlss) / len(anlss), 3)}")
 
     utils.log_result(
         "Kleister NDA",
-        model=MODEL, 
-        method=DOC_PROMPT_METHOD, 
+        model=MODEL,
+        method=DOC_PROMPT_METHOD,
         anlss=anlss,
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

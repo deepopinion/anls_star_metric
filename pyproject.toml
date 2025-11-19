@@ -1,43 +1,59 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-
 [project]
 name = "anls_star"
 version = "0.0.12"
 authors = [
-  { name="David Peer", email="david.peer@deepopinion.ai" },
+  { name="David Peer", email="david.peer@otera.ai" },
 ]
 description = "A universal metric for Generative Large Language Models (GLLMs)"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "munkres",
+    "munkres>=1.1.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "src/*.py",
-  "/tests",
-]
-exclude = [
-    "src/benchmark*",
+[dependency-groups]
+dev = [
+    {include-group = "test"},
+    "twine>=6.0.1",
 ]
 
-[tool.hatch.build.targets.wheel.sources]
-"src" = "anls_star"
+test = [
+    "hypothesis>=6.141.1",
+    "pytest>=8.4.2",
+]
 
 [project.urls]
 Repository = "https://github.com/deepopinion/anls_star_metric"
 Issues = "https://github.com/deepopinion/anls_star_metric/issues"
 Paper = "https://arxiv.org/abs/2402.03848"
-DeepOpinion = "https://deepopinion.ai"
+Otera = "https://otera.ai"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src/anls_star/*.py",
+  "/tests",
+]
+exclude = [
+    "/src/anls_star/benchmark*",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = "anls_star"
+
+[tool.ruff]
+line-length = 120

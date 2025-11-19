@@ -141,35 +141,32 @@ The following table shows the ANLS* score for the different models and prompt me
 
 
 ### How To Execute
-1. Install all dependencies via `pip install -r requirements_dev.txt`
+1. Install all dependencies via `uv sync --dev`
 2. Setup the keys
  - OpenAI: Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. 
  - Gemini: Ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
  - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT` (Azure)
  - Anthropic: Setup the `ANTHROPIC_API_KEY` env variable
 3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script. For example:
+4. Execute the corresponding benchmark script (additional packages need to be installed). For example:
 
 ```bash
     python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
 ```
 
-Note that we always benchmark the latest version of each model and report those values in the table above. In the paper, we additionally report the performance of intermediate versions of each model such as gpt-4-1106-preview and 
-gpt-4-turbo-2024-04-09.
-
+Note that we always benchmark the latest version of each model and report those values in the table above. In the paper, we additionally report the performance of intermediate versions of each model such as `gpt-4-1106-preview` and `gpt-4-turbo-2024-04-09`.
 
 The following prompt methods are supported:
 - `simple` - Simple text concatenation after OCR with GooleOCR
 - `latin` - Method as introduced by [Wang et al.](https://arxiv.org/abs/2306.00526)
-- `sft` - DeepOpinion internal only
+- `sft` - Otera internal only
 - `vision` - If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
 
 5. The final ANLS* is shown on the console. 
 
 
-
 ## How to Execute all Unit Tests
-To run all unit tests simply execute `pytest`
+To run all unit tests simply execute `uv run pytest`
 
 
 ## Packaging

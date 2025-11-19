@@ -3,6 +3,7 @@ import io
 from PIL import Image
 import base64
 
+
 def _resize_image(image, max_dimension):
     width, height = image.size
 
@@ -21,16 +22,18 @@ def _resize_image(image, max_dimension):
             new_height = max_dimension
             new_width = int(width * (max_dimension / height))
         image = image.resize((new_width, new_height), Image.LANCZOS)
-        
+
     return image
+
 
 def _convert_to_png(image):
     with io.BytesIO() as output:
         image.save(output, format="PNG")
         return output.getvalue()
 
+
 def process_image(image, max_size=None):
     if max_size is not None:
         image = _resize_image(image, max_size)
     png_image = _convert_to_png(image)
-    return base64.b64encode(png_image).decode('utf-8')
+    return base64.b64encode(png_image).decode("utf-8")

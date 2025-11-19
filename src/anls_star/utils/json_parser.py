@@ -1,12 +1,11 @@
-import json
 import re
 
 from langchain_core.runnables import Runnable
 
 _json_markdown_re = re.compile(r"```(json)?(.*)```", re.DOTALL)
 
-class JsonParser(Runnable):
 
+class JsonParser(Runnable):
     def invoke(self, *args, **kwargs) -> dict:
         try:
             text = args[0].content
@@ -18,5 +17,5 @@ class JsonParser(Runnable):
             text = text.replace("```", "")
 
             return text
-        except Exception as e:
+        except Exception:
             raise
