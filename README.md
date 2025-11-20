@@ -2,7 +2,6 @@
 **🌟 A Universal Metric for Generative Large Language Models 🌟**
 *Now with benchmarks for gpt-4.5 preview as well as claude-37 and llama-3.1-405B*
 
-
 <div align="center">
 
 <a href="">[![arXiv](https://img.shields.io/badge/arXiv-2402.03848-30C251.svg)](https://arxiv.org/abs/2402.03848)</a>
@@ -138,32 +137,6 @@ The following table shows the ANLS* score for the different models and prompt me
 
 <!-- Note that we link here to the github repo -- then values in pypi are automatically updated without the need to release a new package -->
 <img src="https://raw.githubusercontent.com/deepopinion/anls_star_metric/main/assets/table.png" alt="table" width="1000"/>
-
-
-### How To Execute
-1. Install all dependencies via `uv sync --dev`
-2. Setup the keys
- - OpenAI: Ensure that your OpenAI API key is set as environment variable `OPENAI_API_KEY`. 
- - Gemini: Ensure that your VertexAI setup is correct in case you wanna benchmark gemini-pro too.
- - Mistral: Setup the `MISTRAL_API_KEY` env variable as well as `MISTRAL_ENDPOINT` (Azure)
- - Anthropic: Setup the `ANTHROPIC_API_KEY` env variable
-3. Download all datasets - the download link is provided when executing the benchmark script for the first time. Please note that the `datasets` folder should be on the same level as the repository folder.
-4. Execute the corresponding benchmark script (additional packages need to be installed). For example:
-
-```bash
-    python3 src/benchmark_doc_vqa.py "gpt-3.5-turbo-16k" "simple"
-```
-
-Note that we always benchmark the latest version of each model and report those values in the table above. In the paper, we additionally report the performance of intermediate versions of each model such as `gpt-4-1106-preview` and `gpt-4-turbo-2024-04-09`.
-
-The following prompt methods are supported:
-- `simple` - Simple text concatenation after OCR with GooleOCR
-- `latin` - Method as introduced by [Wang et al.](https://arxiv.org/abs/2306.00526)
-- `sft` - Otera internal only
-- `vision` - If images should directly be used. Requires a model with vision capabilities e.g. gpt-4-vision
-
-5. The final ANLS* is shown on the console. 
-
 
 ## How to Execute all Unit Tests
 To run all unit tests simply execute `uv run pytest`
