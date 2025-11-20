@@ -18,3 +18,4 @@
 ### Removed
 - Outdated `tutorials` directory.
 - `twine` from dev dependencies.
+- `benchmark` directory (moved to separate repo since it uses private Otera packages)
