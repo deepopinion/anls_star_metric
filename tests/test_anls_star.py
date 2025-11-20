@@ -470,7 +470,9 @@ def test_classical_qa_dataset():
         "st. louis children hospital",
     ]
     answer = "St. Louis Children's Hospital"
-    anls, closest_gt = anls_score(answers, answer, return_gt=True)
+
+    with pytest.warns(UserWarning):
+        anls, closest_gt = anls_score(answers, answer, return_gt=True)
 
     assert anls == approx(1.0)
     assert closest_gt == "st. louis children's hospital"
@@ -628,7 +630,9 @@ def test_paper_complex_object():
 def test_paper_edge_list_implicitly_casted():
     gt = list(["Hello", "World"])
     answer = "World"
-    anls = anls_score(gt, answer)
+
+    with pytest.warns(UserWarning):
+        anls = anls_score(gt, answer)
 
     assert anls == approx(1.0)
 
