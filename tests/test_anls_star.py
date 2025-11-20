@@ -1,12 +1,10 @@
 import itertools
 import random
-import sys
-
-sys.path.append("../src")
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 from pytest import approx
+
 from anls_star import anls_score
 from anls_star.anls_star import ANLSTree
 from anls_star.key_scores_utils import ScoreNode as SN
