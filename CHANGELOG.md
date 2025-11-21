@@ -2,6 +2,16 @@
 
 ## Release vx.x.x ()
 ### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+
+## Release v0.1.0 (2025-11-21)
+### Added
 - Add release pipeline
 - Linting and Formatting via `ruff` (also in CI)
 - Tested compatibility with Python `3.9` to `3.14`
@@ -12,8 +22,6 @@
 - Switch from `twine` to `uv publish`
 - Introduce `src` layout for the package
 - Switch from `pip` to `uv`.
-
-### Fixed
 
 ### Removed
 - Outdated `tutorials` directory.
