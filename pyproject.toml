@@ -2,7 +2,7 @@
 name = "anls_star"
 version = "0.1.0"
 authors = [
-  { name="David Peer", email="david.peer@otera.ai" },
+  { name="Otera", email="hello@otera.ai" },
 ]
 description = "A universal metric for Generative Large Language Models (GLLMs)"
 readme = "README.md"
