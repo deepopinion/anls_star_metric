@@ -2,6 +2,8 @@
 
 ## Release vx.x.x ()
 ### Added
+- `ruff` for sorting of imports
+- `py.typed` marker file for PEP 561 compliance
 
 ### Changed
 

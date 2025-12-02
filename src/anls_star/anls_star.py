@@ -10,9 +10,10 @@ Otera, 2025
 import abc
 import math
 import warnings
-from typing import Any, Literal, Union, overload, cast
+from typing import Any, Literal, Union, cast, overload
 
 from munkres import Munkres, make_cost_matrix
+
 from . import key_scores_utils as ksu
 
 
