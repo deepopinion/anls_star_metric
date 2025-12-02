@@ -26,9 +26,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: astral-sh/ruff-action@v3
+      - name: Check formatting
+        uses: astral-sh/ruff-action@v3
         with:
           args: format --check
+
+      - name: Check sorting of imports
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: ruff check --select I
 
   test:
     timeout-minutes: 30
