@@ -2,8 +2,9 @@ import sys
 
 sys.path.append("../src")
 
-import anls_star.key_scores_utils as ksu
 import pytest
+
+import anls_star.key_scores_utils as ksu
 
 
 @pytest.mark.parametrize(
