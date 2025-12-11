@@ -29,6 +29,7 @@ dev = [
 
 test = [
     "hypothesis>=6.141.1",
+    "mypy>=1.19.0",
     "pytest>=8.4.2",
 ]
 
@@ -42,6 +43,10 @@ paper = "https://arxiv.org/abs/2402.03848"
 [build-system]
 requires = ["uv_build>=0.9.5,<0.10.0"]
 build-backend = "uv_build"
+
+[[tool.mypy.overrides]]
+module = "munkres.*"
+ignore_missing_imports = true  # TODO: As of 1.1.4 this project is not typed
 
 [tool.ruff]
 line-length = 120

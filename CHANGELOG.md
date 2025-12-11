@@ -5,11 +5,13 @@
 - `ruff` for sorting of imports
 - `py.typed` marker file for PEP 561 compliance
 - Project-related metadata to `pyproject.toml`.
+- `mypy` type checking in CI
 
 ### Changed
 - Enabled dependency grouping in `dependabot` to collect all dependency updates in one PR rather than one per dependency.
 
 ### Fixed
+- return type inconsistency in `_levenshtein_distance`
 
 ### Removed
 
