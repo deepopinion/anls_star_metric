@@ -44,8 +44,9 @@ paper = "https://arxiv.org/abs/2402.03848"
 requires = ["uv_build>=0.9.5,<0.10.0"]
 build-backend = "uv_build"
 
-[tool.mypy]
-explicit_package_bases=true  # TODO: As of munkres 1.1.4 this setting is needed to avoid mypy errors.
+[[tool.mypy.overrides]]
+module = "munkres.*"
+ignore_missing_imports = true  # TODO: As of 1.1.4 this project is not typed
 
 [tool.ruff]
 line-length = 120
