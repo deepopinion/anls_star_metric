@@ -11,7 +11,7 @@
 - Enabled dependency grouping in `dependabot` to collect all dependency updates in one PR rather than one per dependency.
 
 ### Fixed
-- return type inconsistenty in `_levenshtein_distance`
+- return type inconsistency in `_levenshtein_distance`
 
 ### Removed
 
