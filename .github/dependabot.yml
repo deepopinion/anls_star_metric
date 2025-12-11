@@ -14,3 +14,8 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "[BUILD] dependabot:"
+    groups:
+      uv-development:
+        dependency-type: development  # Not working for uv as of dependabot v0.351.0 but added to be ready once supported
+      uv-production:
+        dependency-type: production
