@@ -33,10 +33,11 @@ test = [
 ]
 
 [project.urls]
-Repository = "https://github.com/deepopinion/anls_star_metric"
-Issues = "https://github.com/deepopinion/anls_star_metric/issues"
-Paper = "https://arxiv.org/abs/2402.03848"
-Otera = "https://otera.ai"
+changelog = "https://github.com/deepopinion/anls_star_metric/blob/main/CHANGELOG.md"
+issues = "https://github.com/deepopinion/anls_star_metric/issues"
+source = "https://github.com/deepopinion/anls_star_metric"
+releasenotes = "https://github.com/deepopinion/anls_star_metric/releases"
+paper = "https://arxiv.org/abs/2402.03848"
 
 [build-system]
 requires = ["uv_build>=0.9.5,<0.10.0"]
