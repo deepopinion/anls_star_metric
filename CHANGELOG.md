@@ -4,8 +4,10 @@
 ### Added
 - `ruff` for sorting of imports
 - `py.typed` marker file for PEP 561 compliance
+- Project-related metadata to `pyproject.toml`.
 
 ### Changed
+- Enabled dependency grouping in `dependabot` to collect all dependency updates in one PR rather than one per dependency.
 
 ### Fixed
 
