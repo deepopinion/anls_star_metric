@@ -51,9 +51,13 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install Python and dependencies
+        run: |
+          uv sync --group test --locked
+
       - name: Run type checks with mypy
         run: |
-          uvx mypy src/anls_star
+          uv run mypy src/
 
 
   test:
