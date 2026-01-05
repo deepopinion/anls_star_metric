@@ -14,6 +14,7 @@
 - return type inconsistency in `_levenshtein_distance`
 
 ### Removed
+- Support for Python `3.9` dropped, since it is end of life.
 
 
 ## Release v0.1.0 (2025-11-21)
