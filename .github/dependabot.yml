@@ -16,6 +16,6 @@ updates:
       prefix: "[BUILD] dependabot:"
     groups:
       uv-development:
-        dependency-type: development  # Not working for uv as of dependabot v0.351.0 but added to be ready once supported
+        dependency-type: development
       uv-production:
         dependency-type: production
