@@ -2,6 +2,16 @@
 
 ## Release vx.x.x ()
 ### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+
+## Release v1.0.0 (2026-01-07)
+### Added
 - `ruff` for sorting of imports
 - `py.typed` marker file for PEP 561 compliance
 - Project-related metadata to `pyproject.toml`.
@@ -11,7 +21,7 @@
 - Enabled dependency grouping in `dependabot` to collect all dependency updates in one PR rather than one per dependency.
 
 ### Fixed
-- return type inconsistency in `_levenshtein_distance`
+- Return type inconsistency in `_levenshtein_distance`
 
 ### Removed
 - Support for Python `3.9` dropped, since it is end of life.
