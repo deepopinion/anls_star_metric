@@ -10,6 +10,11 @@
 ### Removed
 
 
+## Release v1.0.1 (2026-01-12)
+### Fixed
+- `py.typed` needs to be included in the release as well.
+
+
 ## Release v1.0.0 (2026-01-07)
 ### Added
 - `ruff` for sorting of imports
