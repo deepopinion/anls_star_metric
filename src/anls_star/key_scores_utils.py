@@ -5,7 +5,7 @@ from typing import Any
 @dataclass
 class ScoreNode:
     anls_score: float | None = None
-    children: dict[str, Any] = field(default_factory=dict)
+    children: dict[str, Any] = field(default_factory=dict)  # TODO: Check whether the following holds: children is always populated with ScoreNode instances (see construct_nested_dict), so dict[str, Any] loses type safety and keeps Any imported solely for this field. Consider typing it as a self-referential dict[str, "ScoreNode"] and dropping the unused Any import.
 
 
 def construct_nested_dict(
