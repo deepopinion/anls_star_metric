@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
 class ScoreNode:
-    anls_score: Optional[float] = None
-    children: dict[str, Any] = field(default_factory=dict)
+    anls_score: float | None = None
+    children: dict[str, Any] = field(
+        default_factory=dict
+    )  # TODO: Check whether the following holds: children is always populated with ScoreNode instances (see construct_nested_dict), so dict[str, Any] loses type safety and keeps Any imported solely for this field. Consider typing it as a self-referential dict[str, "ScoreNode"] and dropping the unused Any import.
 
 
 def construct_nested_dict(
@@ -103,7 +105,7 @@ def merge_and_calculate_mean(
             combined_scores[k] += v
             count_dict[k] += 1
 
-    for k in combined_scores.keys():
+    for k in combined_scores:
         combined_scores[k] /= count_dict[k]
 
     # Converting the combined_scores back to a list of dictionaries

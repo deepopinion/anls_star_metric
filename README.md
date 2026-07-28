@@ -25,6 +25,7 @@
 
 ```python
 from anls_star import anls_score
+
 anls = anls_score("Hello World", "Hello Wrld")
 print(anls)
 ```
@@ -36,8 +37,8 @@ The `anls_score` function can also be used to return the object which best match
 
 As an example:
 ```python
-gt = {'a': ('hello', 'world'), 'b': ['this', 'is', 'a', 'test']}
-pred = {'a': 'hello!', 'b': ['a', 'test', 'this', 'be']}
+gt = {"a": ("hello", "world"), "b": ["this", "is", "a", "test"]}
+pred = {"a": "hello!", "b": ["a", "test", "this", "be"]}
 score, closest_gt = anls_score(gt, pred, return_gt=True)
 # score = 0.766...
 # closest_gt = {'a': 'hello', 'b': ['a', 'test', 'this', 'is']}
@@ -46,6 +47,7 @@ score, closest_gt = anls_score(gt, pred, return_gt=True)
 This result can then be used e.g. with the [deepdiff](https://pypi.org/project/deepdiff/) package for further analysis:
 ```python
 from deepdiff import DeepDiff
+
 diff = DeepDiff(closest_gt, pred)
 # diff = {'values_changed': {"root['a']": {'new_value': 'hello!', 'old_value': 'hello'},
 #                            "root['b'][3]": {'new_value': 'be', 'old_value': 'is'}}}

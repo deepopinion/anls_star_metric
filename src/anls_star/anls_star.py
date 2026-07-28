@@ -10,7 +10,7 @@ Otera, 2025
 import abc
 import math
 import warnings
-from typing import Any, Literal, Union, cast, overload
+from typing import Any, Literal, cast, overload
 
 from munkres import Munkres, make_cost_matrix
 
@@ -49,10 +49,10 @@ class ANLSTree(abc.ABC):
         return (sum(nls_list) / length) if length > 0 else 1.0, closest_gt, key_scores
 
     def __str__(self) -> str:
-        return f"ANLSTree({repr(self.obj)})"
+        return f"ANLSTree({self.obj!r})"
 
     def __repr__(self) -> str:
-        return f"ANLSTree({repr(self.obj)})"
+        return f"ANLSTree({self.obj!r})"
 
     @abc.abstractmethod
     def __len__(self) -> int:
@@ -84,7 +84,7 @@ class ANLSTuple(ANLSTree):
         self.tree: tuple[ANLSTree, ...] = tuple(ANLSTree.make_tree(x, is_gt=is_gt) for x in obj)
 
     def __repr__(self):
-        return f"ANLSTuple({repr(self.obj)})"
+        return f"ANLSTuple({self.obj!r})"
 
     def __len__(self):
         return max(len(x) for x in self.tree)
@@ -143,7 +143,7 @@ class ANLSList(ANLSTree):
         self.tree: list[ANLSTree] = [ANLSTree.make_tree(x, is_gt=is_gt) for x in obj]
 
     def __repr__(self):
-        return f"ANLSList({repr(self.obj)})"
+        return f"ANLSList({self.obj!r})"
 
     def __len__(self):
         return sum(len(x) for x in self.tree)
@@ -272,7 +272,7 @@ class ANLSDict(ANLSTree):
         self.tree: dict[Any, ANLSTree] = {k: ANLSTree.make_tree(v, is_gt=is_gt) for k, v in obj.items()}
 
     def __repr__(self):
-        return f"ANLSDict({repr(self.obj)})"
+        return f"ANLSDict({self.obj!r})"
 
     def __len__(self):
         return sum(len(x) for x in self.tree.values())
@@ -365,7 +365,7 @@ class ANLSLeaf(ANLSTree):
         self.obj = obj
 
     def __repr__(self):
-        return f"ANLSLeaf({repr(self.obj)})"
+        return f"ANLSLeaf({self.obj!r})"
 
     def __len__(self):
         return 1
@@ -442,7 +442,9 @@ def anls_score(
 @overload
 def anls_score(
     gt: Any, pred: Any, *, return_gt: bool = False, return_key_scores: bool = False
-) -> Union[float, tuple[float, Any], tuple[float, dict], tuple[float, Any, dict]]: ...
+) -> (
+    float | tuple[float, Any] | tuple[float, dict] | tuple[float, Any, dict]
+): ...  # TODO: Check if the following holds: The return_key_scores overloads currently return dict, but construct_nested_dict() returns dict[str, ScoreNode]. Tightening these overload return types makes the public API more accurate for type checkers.
 
 
 def anls_score(gt, pred, return_gt: bool = False, return_key_scores: bool = False):
