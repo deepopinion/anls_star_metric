@@ -4,8 +4,10 @@
 ### Added
 
 ### Changed
+- **BREAKING**: Invalid input *types* now raise `TypeError` instead of `ValueError`. `TypeError` is not a subclass of `ValueError`, so `except ValueError` no longer catches these. Affects unsupported leaf types and mismatched container types. `ValueError` is still raised for invalid *values* (e.g. empty ground truth tuple, tuple used in a prediction).
 
 ### Fixed
+- Various linting errors after updating to `ruff v0.16.0`.
 
 ### Removed
 

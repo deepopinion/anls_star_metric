@@ -1,4 +1,5 @@
 import itertools
+import math
 import random
 
 import pytest
@@ -12,6 +13,10 @@ from anls_star.key_scores_utils import ScoreNode as SN
 
 
 #### Helper functions ####
+def is_nan(obj):
+    return isinstance(obj, float) and math.isnan(obj)
+
+
 def has_tuple(obj):
     if isinstance(obj, tuple):
         return True
@@ -56,7 +61,7 @@ def test_anls_score_single_answer(s):
 
     assert anls == approx(1.0)
     # Equal unless both are NaN (NaN != NaN)
-    assert closest_gt == s or (closest_gt != closest_gt and s != s)
+    assert closest_gt == s or (is_nan(closest_gt) and is_nan(s))
 
 
 @given(st.text().filter(lambda x: x != "Hi there"))
@@ -120,7 +125,7 @@ def test_anls_tuple_with_empty_list_2():
 
 def test_anls_empty_tuple_should_fail():
     with pytest.raises(ValueError, match="Expected at least 1 valid ground truth option"):
-        ANLSTree.make_tree(tuple(), is_gt=True)
+        ANLSTree.make_tree((), is_gt=True)
 
 
 ### Lists ###
@@ -219,7 +224,7 @@ def test_anls_score_none_expected_but_not_predicted(pred):
 
 ### Dicts ###
 def test_anls_score_empty_dict():
-    assert anls_score(dict(), dict(), return_gt=True) == (approx(1.0), dict())
+    assert anls_score({}, {}, return_gt=True) == (approx(1.0), {})
 
 
 @given(
@@ -242,7 +247,7 @@ def test_anls_score_two_equal_dicts(d: dict):
 def test_anls_score_two_dicts_hallucinated_key(d: dict):
     gt = d.copy()
     pred = d.copy()
-    gt.pop(list(gt.keys())[0])  # remove a random key from gt
+    gt.pop(next(iter(gt)))  # remove a random key from gt
     anls, closest_gt, _ = anls_score(gt, pred, return_gt=True, return_key_scores=True)
 
     assert anls < 1.0
@@ -262,7 +267,7 @@ def test_anls_score_two_dicts_hallucinated_key(d: dict):
 def test_anls_score_two_dicts_missing_key(d: dict):
     gt = d.copy()
     pred = d.copy()
-    pred.pop(list(pred.keys())[0])  # remove a random key from pred
+    pred.pop(next(iter(pred)))  # remove a random key from pred
     anls, closest_gt, _ = anls_score(gt, pred, return_gt=True, return_key_scores=True)
 
     assert anls < 1.0
@@ -556,7 +561,7 @@ def test_paper_string_hallucination():
 
 
 def test_paper_one_of_n():
-    gt = tuple(["Hello", "World"])
+    gt = ("Hello", "World")
     answer = "Hello"
     anls = anls_score(gt, answer)
 
@@ -564,7 +569,7 @@ def test_paper_one_of_n():
 
 
 def test_paper_one_of_n_typo():
-    gt = tuple(["Hello", "World"])
+    gt = ("Hello", "World")
     answer = "Wolrd"
     anls = anls_score(gt, answer)
 
@@ -573,23 +578,23 @@ def test_paper_one_of_n_typo():
 
 def test_paper_expected_string():
     gt = "Hello World"
-    answer = list(["Hello", "World"])
+    answer = ["Hello", "World"]
     anls = anls_score(gt, answer)
 
     assert anls == approx(0.0)
 
 
 def test_paper_list_correct():
-    gt = list(["Hello", "World"])
-    answer = list(["World", "Hello"])
+    gt = ["Hello", "World"]
+    answer = ["World", "Hello"]
     anls = anls_score(gt, answer)
 
     assert anls == approx(1.0)
 
 
 def test_paper_list_missing_element():
-    gt = list(["Hello", "World"])
-    answer = list(["Hello"])
+    gt = ["Hello", "World"]
+    answer = ["Hello"]
     anls = anls_score(gt, answer)
 
     assert anls == approx(0.5)
@@ -629,7 +634,7 @@ def test_paper_complex_object():
 
 
 def test_paper_edge_list_implicitly_casted():
-    gt = list(["Hello", "World"])
+    gt = ["Hello", "World"]
     answer = "World"
 
     with pytest.warns(UserWarning):
@@ -719,7 +724,7 @@ def test_key_scores_complex_hierarchy():
             "items": [{"id": "1", "value": "12.1"}, {"id": "3", "value": "13.4"}],
         },
     }
-    anls, key_scores = anls_score(gt, answer, return_key_scores=True)
+    _, key_scores = anls_score(gt, answer, return_key_scores=True)
 
     assert key_scores == {
         "a": SN(anls_score=0.8333333333333334),
