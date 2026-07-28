@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- Various linting errors after updating to `ruff v0.16.0`.
 
 ### Removed
 
