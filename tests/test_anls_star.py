@@ -1,4 +1,5 @@
 import itertools
+import math
 import random
 
 import pytest
@@ -12,6 +13,10 @@ from anls_star.key_scores_utils import ScoreNode as SN
 
 
 #### Helper functions ####
+def is_nan(obj):
+    return isinstance(obj, float) and math.isnan(obj)
+
+
 def has_tuple(obj):
     if isinstance(obj, tuple):
         return True
@@ -55,8 +60,8 @@ def test_anls_score_single_answer(s):
     anls, closest_gt, _ = anls_score(gts, pred, return_gt=True, return_key_scores=True)
 
     assert anls == approx(1.0)
-    # nan_ok because NaN != NaN
-    assert closest_gt == approx(s, nan_ok=True)
+    # Equal unless both are NaN (NaN != NaN)
+    assert closest_gt == s or (is_nan(closest_gt) and is_nan(s))
 
 
 @given(st.text().filter(lambda x: x != "Hi there"))
