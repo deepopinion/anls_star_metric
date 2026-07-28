@@ -442,7 +442,9 @@ def anls_score(
 @overload
 def anls_score(
     gt: Any, pred: Any, *, return_gt: bool = False, return_key_scores: bool = False
-) -> float | tuple[float, Any] | tuple[float, dict] | tuple[float, Any, dict]: ...  # TODO: Check if the following holds: The return_key_scores overloads currently return dict, but construct_nested_dict() returns dict[str, ScoreNode]. Tightening these overload return types makes the public API more accurate for type checkers.
+) -> (
+    float | tuple[float, Any] | tuple[float, dict] | tuple[float, Any, dict]
+): ...  # TODO: Check if the following holds: The return_key_scores overloads currently return dict, but construct_nested_dict() returns dict[str, ScoreNode]. Tightening these overload return types makes the public API more accurate for type checkers.
 
 
 def anls_score(gt, pred, return_gt: bool = False, return_key_scores: bool = False):
