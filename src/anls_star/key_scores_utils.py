@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
 class ScoreNode:
-    anls_score: Optional[float] = None
+    anls_score: float | None = None
     children: dict[str, Any] = field(default_factory=dict)
 
 
@@ -103,7 +103,7 @@ def merge_and_calculate_mean(
             combined_scores[k] += v
             count_dict[k] += 1
 
-    for k in combined_scores.keys():
+    for k in combined_scores:
         combined_scores[k] /= count_dict[k]
 
     # Converting the combined_scores back to a list of dictionaries
