@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- Pinned `munkres` to `>=1.1.4,<2`, the last releases from its original maintainer. The PyPI project changed hands in October 2026, and 2.0.0/3.0.0 come from the new maintainer. On ties, per-key scores (`return_key_scores=True`) follow 1.1.4's tie-breaking again; total scores are unchanged.
 - **BREAKING**: Invalid input *types* now raise `TypeError` instead of `ValueError`. `TypeError` is not a subclass of `ValueError`, so `except ValueError` no longer catches these. Affects unsupported leaf types and mismatched container types. `ValueError` is still raised for invalid *values* (e.g. empty ground truth tuple, tuple used in a prediction).
 
 ### Fixed

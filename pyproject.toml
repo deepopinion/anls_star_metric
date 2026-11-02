@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "munkres>=1.1.0",
+    "munkres>=1.1.4,<2",
 ]
 
 [dependency-groups]

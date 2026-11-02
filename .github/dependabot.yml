@@ -14,6 +14,10 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "[BUILD] dependabot:"
+    ignore:
+      # The munkres PyPI name passed to a new maintainer in Oct 2026; 2.x/3.x are unreviewed. Stay on 1.1.4.
+      - dependency-name: "munkres"
+        versions: [">=2"]
     groups:
       uv-development:
         dependency-type: development
