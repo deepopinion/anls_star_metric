@@ -18,7 +18,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "munkres>=1.1.4,<2",
+    # Keep the upper pin: the munkres PyPI project passed to a new solo maintainer in
+    # October 2026, and 2.x/3.x (3.0.0 adds a C extension) are unreviewed. Only raise
+    # it after reviewing the new releases.
+    "munkres>=1.1.0,<2",
 ]
 
 [dependency-groups]
