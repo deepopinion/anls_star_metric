@@ -4,13 +4,21 @@
 ### Added
 
 ### Changed
-- Pinned `munkres` below 2 (`>=1.1.0,<2`), keeping the releases from its original maintainer. The PyPI project changed hands in October 2026, and 2.0.0/3.0.0 come from the new maintainer. On ties, per-key scores (`return_key_scores=True`) follow 1.1.4's tie-breaking again; total scores are unchanged.
+
+### Fixed
+
+### Removed
+
+
+## Release v2.0.0 (2026-11-11)
+### Added
+- Support for Python `3.15` added.
+
+### Changed
 - **BREAKING**: Invalid input *types* now raise `TypeError` instead of `ValueError`. `TypeError` is not a subclass of `ValueError`, so `except ValueError` no longer catches these. Affects unsupported leaf types and mismatched container types. `ValueError` is still raised for invalid *values* (e.g. empty ground truth tuple, tuple used in a prediction).
 
 ### Fixed
 - Various linting errors after updating to `ruff v0.16.0`.
-
-### Removed
 
 
 ## Release v1.0.1 (2026-01-12)
