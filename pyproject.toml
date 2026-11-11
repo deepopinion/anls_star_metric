@@ -1,6 +1,6 @@
 [project]
 name = "anls_star"
-version = "1.0.1"
+version = "2.0.0"
 authors = [
   { name="Otera", email="hello@otera.ai" },
 ]
@@ -14,14 +14,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    # Keep the upper pin: the munkres PyPI project passed to a new solo maintainer in
-    # October 2026, and 2.x/3.x (3.0.0 adds a C extension) are unreviewed. Only raise
-    # it after reviewing the new releases.
-    "munkres>=1.1.0,<2",
+    "munkres>=1.1.0",
 ]
 
 [dependency-groups]
