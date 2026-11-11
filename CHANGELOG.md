@@ -12,13 +12,10 @@
 
 ## Release v2.0.0 (2026-11-11)
 ### Added
-- Support for Python `3.15` added.
+- Python `3.15` is now tested in CI and listed in the package classifiers.
 
 ### Changed
-- **BREAKING**: Invalid input *types* now raise `TypeError` instead of `ValueError`. `TypeError` is not a subclass of `ValueError`, so `except ValueError` no longer catches these. Affects unsupported leaf types and mismatched container types. `ValueError` is still raised for invalid *values* (e.g. empty ground truth tuple, tuple used in a prediction).
-
-### Fixed
-- Various linting errors after updating to `ruff v0.16.0`.
+- **BREAKING**: `anls_score` now raises `TypeError` instead of `ValueError` when `gt` or `pred` contains a value of an unsupported type (anything other than `str`, `int`, `float`, `bool`, `None`, `list`, `tuple`, `dict` — e.g. a `set` or a `numpy.int64`). `except ValueError` no longer catches this; catch `(TypeError, ValueError)` to cover both. Invalid *values* still raise `ValueError` (empty ground-truth tuple, tuple used in a prediction).
 
 
 ## Release v1.0.1 (2026-01-12)
