@@ -17,5 +17,7 @@ updates:
     groups:
       uv-development:
         dependency-type: development
+        exclude-patterns:
+          - "uv-build"  # grouped, its update is skipped since uv.lock has no previous version for it
       uv-production:
         dependency-type: production
