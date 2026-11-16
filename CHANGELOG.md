@@ -8,6 +8,7 @@
 ### Fixed
 
 ### Removed
+- Drop Python `3.10` support, since it is end of life.
 
 
 ## Release v2.0.0 (2026-11-11)
